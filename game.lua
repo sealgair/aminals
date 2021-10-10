@@ -6,51 +6,98 @@ flags = {
   stop=0
 }
 
+playerselect = {
+  options = {
+    {17, 32},
+    {49, 1},
+  },
+  chosen = {0, 0},
+  selected = {1, 1},
+  names = {
+    {'shru', 'forg'},
+    {'brid', 'waps'},
+  }
+}
+
+function playerselect:update()
+  if (btnp(4)) self.chosen = {0, 0}
+  if btnp(5) then
+    if self.chosen[1] == self.selected[1] and self.chosen[2] == self.selected[2] then
+      r = self.selected[1]
+      c = self.selected[2]
+      player.sprite = self.options[c][r]
+      gamestate = game
+    else
+      self.chosen = {self.selected[1], self.selected[2]}
+    end
+  end
+
+  x=0
+  y=0
+  if (btnp(0)) x-=1
+  if (btnp(1)) x+=1
+  if (btnp(2)) y-=1
+  if (btnp(3)) y+=1
+  self.selected[1] = wrap(1, self.selected[1]+x, 2)
+  self.selected[2] = wrap(1, self.selected[2]+y, 2)
+end
+
+function playerselect:draw()
+  rectfill(0, 0, 127, 127, 0)
+  print("choose your player", 28, 5, 8)
+
+  y = 30
+  for r, row in pairs(self.options) do
+    x = 23
+    for c, col in pairs(row) do
+      rect(x, y, x+15, y+15, 6)
+      rect(x+2, y+2, x+13, y+13, 7)
+
+      color(6)
+      if c == self.selected[1] and r == self.selected[2] then
+        color(9)
+        rect(x+1, y+1, x+14, y+14)
+      end
+      if c == self.chosen[1] and r == self.chosen[2] then
+        color(8)
+        rect(x+1, y+1, x+14, y+14)
+      end
+      spr(col, x+4, y+4)
+      print(self.names[r][c], x+1, y+17)
+      x += 64
+    end
+    y += 50
+  end
+end
+
+game = {}
+function game:update()
+  player:update()
+end
+
+function game:draw()
+  rectfill(0,0,1287,127,12)
+  map(0, 0, 0, 0, 127, 127)
+  player:draw()
+end
+
+gamestate = playerselect
+
+
 player = {
   sprite=17,
   flipped=false,
   x=56, y=112,
   w=8, h=8,
-  accel=4, speed=2.5,
+  accel=8, speed=2.5,
   vx=0, vy=0,
 }
-
-function debug(val, opts)
-  opts = opts or {}
-  x = opts.x or 0
-  y = opts.y or 0
-  val = tostring(val)
-  color(opts.bg or 5)
-  rectfill(x, y, 1+(#tostring(val)*4), y+7)
-  color(opts.fg or 6)
-  print(val, x+1, y+1)
-end
-
-function wrap(min, v, max)
-  d = max-min
-  if (v < min) v += d
-  if (v > max) v -= d
-  return v
-end
-
-function bound(b, v, t)
-  return max(b, min(v, t))
-end
-
-function sign(v)
-  if (v >= 0) return 1
-  return -1
-end
-
-function mfget(x, y, f)
-  return fget(mget(x/8, y/8), f)
-end
 
 
 function player:collides(x, y)
   for x=x, x+self.w-1 do
     for y=y, y+self.h-1 do
-      if (mfget(x, y, flags.stop)) return true
+      if (mfget(wrap(0, x, 127), wrap(0, y, 127), flags.stop)) return true
     end
   end
   return false
@@ -72,8 +119,8 @@ function player:move()
   end
 
   -- wrap around map
-  self.x = wrap(0, self.x, 127)
-  self.y = wrap(0, self.y, 127)
+  self.x = wrap(-7, self.x, 127)
+  self.y = wrap(-7, self.y, 127)
 end
 
 function player:update()
@@ -105,11 +152,9 @@ function _init()
 end
 
 function _update60()
-  player:update()
+  gamestate:update()
 end
 
 function _draw()
-  rectfill(0,0,1287,127,12)
-  map(0, 0, 0, 0, 127, 127)
-  player:draw()
+  gamestate:draw()
 end
