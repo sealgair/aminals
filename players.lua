@@ -3,6 +3,7 @@ player = {
   w=8, h=8,
   facing=-1,
   accel=5, speed=1,
+  gravity=1,
   vx=0, vy=0,
 }
 
@@ -17,7 +18,7 @@ end
 
 function player:move()
   -- gravity pulls
-  self.vy += g
+  self.vy += g * self.gravity
 
   -- collide with map tiles
   self.x += self.vx
@@ -110,7 +111,21 @@ waps = prototype({
   sprite=1,
   name='waps',
   accel=10, speed=1,
+  gravity=0
 }, player)
+
+function waps:control()
+  player.control(self)
+  dir = 0
+  if (btn(2)) dir = -1
+  if (btn(3)) dir = 1
+
+  if dir==0 then
+    self.vy = max(abs(self.vy) - self.accel*dt*2, 0) * sign(self.vy)
+  else
+    self.vy = bound(-self.speed, self.vy + self.accel*dir*dt, self.speed)
+  end
+end
 
 
 --[[ TODO:
