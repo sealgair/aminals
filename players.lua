@@ -104,8 +104,32 @@ end
 brid = prototype({
   name='brid',
   sprite=48,
-  speed=.75,
+  speed=1.75,
+  walk=.75,
+  flap=1,
+  flapped=0,
+  flaps=0,
+  maxflaps=3,
+  gravity=0.25
 }, player)
+
+function brid:control()
+  player.control(self)
+  if self.grounded then
+    self.flaps = 0
+    self.vx = bound(-self.walk, self.vx, self.walk)
+  else
+    --fall forward
+    self.vx = bound(-self.speed, self.vx+self.accel*self.facing*.04, self.speed)
+  end
+  if btnp(5) and self.flapped <= 0 and self.flaps < self.maxflaps then
+    self.flaps += 1
+    self.vy = max(-self.flap, self.vy-self.accel)
+    self.flapped = 0.3
+  else
+    self.flapped -= dt
+  end
+end
 
 waps = prototype({
   sprite=1,
