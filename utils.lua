@@ -27,3 +27,9 @@ end
 function mfget(x, y, f)
   return fget(mget(x/8, y/8), f)
 end
+
+
+function prototype(a, b)
+  setmetatable(a, {__index = b})
+  return a
+end
