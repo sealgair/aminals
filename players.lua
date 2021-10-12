@@ -124,7 +124,9 @@ brid = prototype({
   name='brid',
   sprite=makesprite({
     idle={48},
-    walk={48,49}
+    walk={48,49},
+    flap={51},
+    glide={50},
   }),
   speed=1.75,
   walk=.75,
@@ -136,10 +138,18 @@ brid = prototype({
 }, player)
 
 function brid:animstate()
-  if self.walking and self.grounded then
-    return 'walk'
+  if self.grounded then
+    if self.walking then
+      return 'walk'
+    else
+      return 'idle'
+    end
   else
-    return 'idle'
+    if self.flapped > 0 then
+      return 'flap'
+    else
+      return 'glide'
+    end
   end
 end
 
@@ -149,8 +159,10 @@ function brid:control()
     self.flaps = 0
     self.vx = bound(-self.walk, self.vx, self.walk)
   else
-    --fall forward
-    self.vx = bound(-self.speed, self.vx+self.accel*self.facing*.04, self.speed)
+    --glide
+    dv = max(self.speed*.5 - abs(self.vx), 0)
+    self.vx += dv*self.facing
+    -- self.vx = bound(-self.speed, self.vx+self.accel*self.facing*.04, self.speed)
   end
   if btnp(5) and self.flapped <= 0 and self.flaps < self.maxflaps then
     self.flaps += 1
