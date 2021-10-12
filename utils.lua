@@ -1,3 +1,7 @@
+-- global constants
+dt = 1/60
+g = 5 * dt
+
 function debug(val, opts)
   opts = opts or {}
   x = opts.x or 0

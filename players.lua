@@ -47,7 +47,8 @@ function player:control()
   if (btn(0)) dir = -1
   if (btn(1)) dir = 1
 
-  if dir==0 then
+  self.walking = dir != 0
+  if dir == 0 then
     -- speed down
     self.vx = max(abs(self.vx) - self.accel*dt*2, 0) * sign(self.vx)
   else
@@ -57,7 +58,12 @@ function player:control()
   end
 end
 
+function player:animstate()
+  return 'idle'
+end
+
 function player:update()
+  self.sprite:advance(dt, self:animstate())
   self:control()
   self:move()
 end
@@ -65,18 +71,31 @@ end
 function player:draw(x, y)
   x = x or self.x
   y = y or self.y
-  spr(self.sprite, x, y, 1, 1, self.facing == 1)
+  self.sprite:draw(x, y, {flipx=self.facing == 1})
 end
 
 shru = prototype({
   name='shru',
-  sprite=16,
+  sprite=makesprite({
+    idle={16,16,16,16,16,16,18, speed=1.5},
+    walk={16,17}
+  }),
   accel=8, speed=2.5,
 }, player)
 
+function shru:animstate()
+  if self.walking then
+    return 'walk'
+  else
+    return 'idle'
+  end
+end
+
 forg = prototype({
   name='forg',
-  sprite=32,
+  sprite=makesprite({
+    idle={32}
+  }),
   accel=8, speed=1.8,
   jump=0,
 }, player)
@@ -103,7 +122,10 @@ end
 
 brid = prototype({
   name='brid',
-  sprite=48,
+  sprite=makesprite({
+    idle={48},
+    walk={48,49}
+  }),
   speed=1.75,
   walk=.75,
   flap=1,
@@ -112,6 +134,14 @@ brid = prototype({
   maxflaps=3,
   gravity=0.25
 }, player)
+
+function brid:animstate()
+  if self.walking and self.grounded then
+    return 'walk'
+  else
+    return 'idle'
+  end
+end
 
 function brid:control()
   player.control(self)
@@ -132,7 +162,9 @@ function brid:control()
 end
 
 waps = prototype({
-  sprite=1,
+  sprite=makesprite({
+    idle={1, 2, speed=1/18}
+  }),
   name='waps',
   accel=10, speed=1,
   gravity=0

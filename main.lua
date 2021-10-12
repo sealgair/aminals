@@ -1,7 +1,4 @@
 
-dt = 1/60
-g = 5 * dt
-
 flags = {
   stop=0
 }
@@ -36,6 +33,12 @@ function playerselect:update()
   if (btnp(3)) y+=1
   self.selected[1] = wrap(1, self.selected[1]+x, 2)
   self.selected[2] = wrap(1, self.selected[2]+y, 2)
+
+  for row in all(self.options) do
+    for col in all(row) do
+      col.sprite:advance()
+    end
+  end
 end
 
 function playerselect:draw()
@@ -58,7 +61,7 @@ function playerselect:draw()
         color(8)
         rect(x+1, y+1, x+14, y+14)
       end
-      col:draw(x+4, y+4)
+      col.sprite:draw(x+4, y+4)
       print(col.name, x+1, y+17)
       x += 64
     end
