@@ -8,31 +8,50 @@ playerselect = {
     {shru, forg},
     {brid, waps},
   },
-  chosen = {0, 0},
-  selected = {1, 1},
+  chosen = {
+    coord(0,0),
+    coord(0,0),
+    coord(0,0),
+    coord(0,0),
+  },
+  selected = {
+    coord(0,0),
+    coord(0,0),
+    coord(0,0),
+    coord(0,0),
+  },
+  player_colors = {8, 12, 11, 10}
 }
 
 function playerselect:update()
-  if (btnp(4)) self.chosen = {0, 0}
-  if btnp(5) then
-    if self.chosen[1] == self.selected[1] and self.chosen[2] == self.selected[2] then
-      r = self.selected[1]
-      c = self.selected[2]
-      game:start(self.options[c][r])
-      gamestate = game
-    else
-      self.chosen = {self.selected[1], self.selected[2]}
+  for player=1,4 do
+    chosen = self.chosen[player]
+    selected = self.selected[player]
+    if (btnp(4, player-1)) chosen.x, chosen.y = 0, 0
+
+    if btnp(5, player-1) then
+      if chosen == selected and chosen != coord(0, 0) then
+        players = {}
+        for pos in all(self.chosen) do
+          if (pos != coord(0,0)) add(players, self.options[pos.y][pos.x])
+        end
+        game:start(players)
+      else
+        chosen.x, chosen.y = selected.x, selected.y
+      end
+    end
+    dx = dpad('x', player-1, true)
+    dy = dpad('y', player-1, true)
+    if dx+dy != 0 then
+      if (selected == coord(0, 0)) then
+        -- jointhe game
+        selected.x, selected.y = 1, 1
+      else
+        selected.x = wrap(1, selected.x+dx, 2)
+        selected.y = wrap(1, selected.y+dy, 2)
+      end
     end
   end
-
-  x=0
-  y=0
-  if (btnp(0)) x-=1
-  if (btnp(1)) x+=1
-  if (btnp(2)) y-=1
-  if (btnp(3)) y+=1
-  self.selected[1] = wrap(1, self.selected[1]+x, 2)
-  self.selected[2] = wrap(1, self.selected[2]+y, 2)
 
   for row in all(self.options) do
     for col in all(row) do
@@ -52,17 +71,20 @@ function playerselect:draw()
       rect(x, y, x+15, y+15, 6)
       rect(x+2, y+2, x+13, y+13, 7)
 
-      color(6)
-      if c == self.selected[1] and r == self.selected[2] then
-        color(9)
-        rect(x+1, y+1, x+14, y+14)
-      end
-      if c == self.chosen[1] and r == self.chosen[2] then
-        color(8)
-        rect(x+1, y+1, x+14, y+14)
+      rc = coord(c, r)
+      for player=1,4 do
+        selected = self.selected[player]
+        chosen = self.chosen[player]
+        color(self.player_colors[player])
+        if rc == selected then
+          print(player, x+(player-1)*4, y-6)
+        end
+        if rc == chosen then
+          rect(x+1, y+1, x+14, y+14)
+        end
       end
       col.sprite:draw(x+4, y+4)
-      print(col.name, x+1, y+17)
+      print(col.name, x+1, y+17, 7)
       x += 64
     end
     y += 50
@@ -72,8 +94,17 @@ end
 game = {
   objects = {}
 }
-function game:start(player)
-  add(self.objects, player)
+function game:start(players)
+  starts = {
+    {8, 16},
+    {8, 112},
+  }
+  printh("loading players")
+  for p, player in pairs(players) do
+    player:init(p-1, unpack(starts[p]))
+    add(self.objects, player)
+  end
+  gamestate = self
 end
 
 function game:update()
@@ -85,7 +116,7 @@ end
 function game:draw()
   rectfill(0,0,1287,127,12)
   map(0, 0, 0, 0, 127, 127)
-  for o in all(self.objects) do
+  for i, o in pairs(self.objects) do
     o:draw()
   end
 end

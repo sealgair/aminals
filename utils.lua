@@ -34,6 +34,39 @@ end
 
 
 function prototype(a, b)
-  setmetatable(a, {__index = b})
+  mt = {__index = b}
+  for k, v in pairs(b) do
+    if (sub(k, 0, 2) == "__") mt[k] = v
+  end
+  setmetatable(a, mt)
   return a
+end
+
+coordinate = {
+  __eq = function(a, b)
+    return a.x == b.x and a.y == b.y
+  end,
+  __tostring = function(self)
+    return self.x .. ", " .. self.y
+  end,
+}
+
+
+function coord(x, y)
+  return prototype({x=x, y=y}, coordinate)
+end
+
+function dpad(axis, player, press)
+  player = player or 0
+  axes = {
+    x={0,1},
+    y={2,3},
+  }
+  axis = axes[axis]
+
+  fn = btn
+  if (press) fn = btnp
+  if (fn(axis[1], player)) return -1
+  if (fn(axis[2], player)) return 1
+  return 0
 end

@@ -5,7 +5,13 @@ player = {
   accel=5, speed=1,
   gravity=1,
   vx=0, vy=0,
+  p=0
 }
+
+function player:init(p, x, y)
+  self.p = p
+  self.x, self.y = x, y
+end
 
 function player:collides(x, y)
   for x=x, x+self.w-1 do
@@ -43,10 +49,7 @@ function player:move()
 end
 
 function player:control()
-  dir = 0
-  if (btn(0)) dir = -1
-  if (btn(1)) dir = 1
-
+  dir = dpad('x', self.p)
   self.walking = dir != 0
   if dir == 0 then
     -- speed down
@@ -101,12 +104,10 @@ forg = prototype({
 }, player)
 
 function forg:control()
-  dir = 0
-  if (btn(0)) dir = -1
-  if (btn(1)) dir = 1
+  dir = dpad('x', self.p)
   if (dir != 0) self.facing = dir
 
-  if btn(5) and (self.grounded or self.jump > 0) then
+  if btn(5, self.p) and (self.grounded or self.jump > 0) then
     if self.grounded then
       self.jump = 0.2
     else
@@ -164,7 +165,7 @@ function brid:control()
     self.vx += dv*self.facing
     -- self.vx = bound(-self.speed, self.vx+self.accel*self.facing*.04, self.speed)
   end
-  if btnp(5) and self.flapped <= 0 and self.flaps < self.maxflaps then
+  if btnp(5, self.p) and self.flapped <= 0 and self.flaps < self.maxflaps then
     self.flaps += 1
     self.vy = max(-self.flap, self.vy-self.accel)
     self.flapped = 0.3
@@ -184,9 +185,7 @@ waps = prototype({
 
 function waps:control()
   player.control(self)
-  dir = 0
-  if (btn(2)) dir = -1
-  if (btn(3)) dir = 1
+  dir = dpad('y', self.p)
 
   if dir==0 then
     self.vy = max(abs(self.vy) - self.accel*dt*2, 0) * sign(self.vy)
