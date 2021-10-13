@@ -69,18 +69,24 @@ function playerselect:draw()
     x = 23
     for c, col in pairs(row) do
       rect(x, y, x+15, y+15, 6)
+      rect(x+1, y+1, x+14, y+14, 6)
       rect(x+2, y+2, x+13, y+13, 7)
 
       rc = coord(c, r)
+      drawn = 0
       for player=1,4 do
         selected = self.selected[player]
         chosen = self.chosen[player]
         color(self.player_colors[player])
+        if rc == chosen then
+          drawn += 1
+          if (drawn == 1) line(x+2, y+1, x+13, y+1) -- top: p1
+          if (drawn < 3) line(x+2, y+14, x+13, y+14) -- bottom: p1 p2
+          if (drawn%2 == 1) line(x+1, y+2, x+1, y+13) -- left: p1 p3
+          if (drawn != 3) line(x+14, y+2, x+14, y+13) -- right: p1 p2 p4
+        end
         if rc == selected then
           print(player, x+(player-1)*4, y-6)
-        end
-        if rc == chosen then
-          rect(x+1, y+1, x+14, y+14)
         end
       end
       col.sprite:draw(x+4, y+4)
@@ -101,8 +107,7 @@ function game:start(players)
   }
   printh("loading players")
   for p, player in pairs(players) do
-    player:init(p-1, unpack(starts[p]))
-    add(self.objects, player)
+    add(self.objects, player:new(p-1, unpack(starts[p])))
   end
   gamestate = self
 end

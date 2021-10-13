@@ -8,9 +8,10 @@ player = {
   p=0
 }
 
-function player:init(p, x, y)
-  self.p = p
-  self.x, self.y = x, y
+function player:new(p, x, y)
+  return prototype({
+    p=p, x=x, y=y
+  }, self)
 end
 
 function player:collides(x, y)
