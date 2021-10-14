@@ -2,6 +2,8 @@ spritebase = {
   animations = {
     idle = {0}
   },
+  palettes={},
+  palette=0,
   state = 'idle',
   clock = 0,
 }
@@ -14,7 +16,10 @@ end
 function spritebase:draw(x,y, opts)
   opts = opts or {}
   cell = self:getcell()
+  palette = opts.palette or self.palette
+  if (palette) pal(self.palettes[palette])
   spr(cell, x, y, opts.w or 1, opts.h or 1, opts.flipx, opts.flipy)
+  pal()
 end
 
 function spritebase:advance(amt, state)
@@ -25,13 +30,12 @@ function spritebase:advance(amt, state)
   if (self.clock >= anim.speed) self.clock = 0
 end
 
-function makesprite(animations)
-  for n, cells in pairs(animations) do
+function makesprite(otps)
+  if (not otps.animations) otps = {animations=otps}
+  for n, cells in pairs(otps.animations) do
     if cells.speed == nil then
       cells.speed = #cells * .15
     end
   end
-  return prototype({
-    animations = animations
-  }, spritebase)
+  return prototype(otps, spritebase)
 end

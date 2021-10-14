@@ -20,7 +20,8 @@ playerselect = {
     coord(0,0),
     coord(0,0),
   },
-  player_colors = {8, 12, 11, 10}
+  player_colors = {8, 12, 11, 10},
+  palettes = {0,0,0,0},
 }
 
 function playerselect:update()
@@ -32,8 +33,13 @@ function playerselect:update()
     if btnp(5, player-1) then
       if chosen == selected and chosen != coord(0, 0) then
         players = {}
-        for pos in all(self.chosen) do
-          if (pos != coord(0,0)) add(players, self.options[pos.y][pos.x])
+        for p, pos in pairs(self.chosen) do
+          if pos != coord(0,0) then
+            add(players, {
+              player=self.options[pos.y][pos.x],
+              palette=self.palettes[p]
+            })
+          end
         end
         game:start(players)
       else
@@ -44,11 +50,15 @@ function playerselect:update()
     dy = dpad('y', player-1, true)
     if dx+dy != 0 then
       if (selected == coord(0, 0)) then
-        -- jointhe game
+        -- join the game
         selected.x, selected.y = 1, 1
-      else
+      elseif chosen == coord(0, 0) then
+        -- hasn't decided
         selected.x = wrap(1, selected.x+dx, 2)
         selected.y = wrap(1, selected.y+dy, 2)
+      else
+        -- choose color
+        self.palettes[player] = wrap(0, self.palettes[player]+dy, 3)
       end
     end
   end
@@ -84,6 +94,8 @@ function playerselect:draw()
           if (drawn < 3) line(x+2, y+14, x+13, y+14) -- bottom: p1 p2
           if (drawn%2 == 1) line(x+1, y+2, x+1, y+13) -- left: p1 p3
           if (drawn != 3) line(x+14, y+2, x+14, y+13) -- right: p1 p2 p4
+
+          col.sprite:draw(2 + (player-1)%2 * 116, 2, {palette=self.palettes[player]})
         end
         if rc == selected then
           print(player, x+(player-1)*4, y-6)
@@ -105,9 +117,9 @@ function game:start(players)
     {8, 16},
     {8, 112},
   }
-  printh("loading players")
-  for p, player in pairs(players) do
-    add(self.objects, player:new(p-1, unpack(starts[p])))
+  for p, popts in pairs(players) do
+    x, y = unpack(starts[p])
+    add(self.objects, popts.player:new(p-1, x, y, popts.palette))
   end
   gamestate = self
 end

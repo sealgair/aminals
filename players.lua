@@ -1,4 +1,4 @@
-player = {
+playerbase = {
   x=56, y=112,
   w=8, h=8,
   facing=-1,
@@ -8,13 +8,14 @@ player = {
   p=0
 }
 
-function player:new(p, x, y)
+function playerbase:new(p, x, y, palette)
   return prototype({
-    p=p, x=x, y=y
+    p=p, x=x, y=y,
+    sprite=prototype({palette=palette}, self.sprite)
   }, self)
 end
 
-function player:collides(x, y)
+function playerbase:collides(x, y)
   for x=x, x+self.w-1 do
     for y=y, y+self.h-1 do
       if (mfget(wrap(0, x, 127), wrap(0, y, 127), flags.stop)) return true
@@ -23,7 +24,7 @@ function player:collides(x, y)
   return false
 end
 
-function player:move()
+function playerbase:move()
   -- gravity pulls
   self.vy += g * self.gravity
 
@@ -49,7 +50,7 @@ function player:move()
   self.grounded = self:collides(self.x, self.y+1)
 end
 
-function player:control()
+function playerbase:control()
   dir = dpad('x', self.p)
   self.walking = dir != 0
   if dir == 0 then
@@ -62,17 +63,17 @@ function player:control()
   end
 end
 
-function player:animstate()
+function playerbase:animstate()
   return 'idle'
 end
 
-function player:update()
+function playerbase:update()
   self.sprite:advance(dt, self:animstate())
   self:control()
   self:move()
 end
 
-function player:draw(x, y)
+function playerbase:draw(x, y)
   x = x or self.x
   y = y or self.y
   self.sprite:draw(x, y, {flipx=self.facing == 1})
@@ -80,12 +81,19 @@ end
 
 shru = prototype({
   name='shru',
-  sprite=makesprite({
-    idle={16,16,16,16,16,16,18, speed=1.5},
-    walk={16,17}
-  }),
+  sprite=makesprite{
+      animations={
+        idle={16,16,16,16,16,16,18, speed=1.5},
+        walk={16,17},
+      },
+      palettes={
+        {[4]=5, [15]=6, [1]=11},
+        {[4]=1, [15]=13, [1]=9, [14]=4},
+        {[4]=7, [15]=7, [1]=8},
+      },
+  },
   accel=8, speed=2.5,
-}, player)
+}, playerbase)
 
 function shru:animstate()
   if self.walking then
@@ -102,7 +110,7 @@ forg = prototype({
   }),
   accel=8, speed=1.8,
   jump=0,
-}, player)
+}, playerbase)
 
 function forg:control()
   dir = dpad('x', self.p)
@@ -137,7 +145,7 @@ brid = prototype({
   flaps=0,
   maxflaps=3,
   gravity=0.25
-}, player)
+}, playerbase)
 
 function brid:animstate()
   if self.grounded then
@@ -156,7 +164,7 @@ function brid:animstate()
 end
 
 function brid:control()
-  player.control(self)
+  playerbase.control(self)
   if self.grounded then
     self.flaps = 0
     self.vx = bound(-self.walk, self.vx, self.walk)
@@ -182,10 +190,10 @@ waps = prototype({
   name='waps',
   accel=10, speed=1,
   gravity=0
-}, player)
+}, playerbase)
 
 function waps:control()
-  player.control(self)
+  playerbase.control(self)
   dir = dpad('y', self.p)
 
   if dir==0 then

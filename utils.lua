@@ -51,7 +51,6 @@ coordinate = {
   end,
 }
 
-
 function coord(x, y)
   return prototype({x=x, y=y}, coordinate)
 end
