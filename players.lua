@@ -105,9 +105,16 @@ end
 
 forg = prototype({
   name='forg',
-  sprite=makesprite({
-    idle={32}
-  }),
+  sprite=makesprite{
+    animations={
+      idle={32}
+    },
+    palettes={
+      {[11]=8, [3]=2, [10]=12},
+      {[11]=10, [3]=9, [10]=2},
+      {[11]=2, [3]=1, [10]=15},
+    }
+  },
   accel=8, speed=1.8,
   jump=0,
 }, playerbase)
@@ -132,12 +139,19 @@ end
 
 brid = prototype({
   name='brid',
-  sprite=makesprite({
-    idle={48},
-    walk={48,49},
-    flap={51},
-    glide={50},
-  }),
+  sprite=makesprite{
+    animations={
+      idle={48},
+      walk={48,49},
+      flap={51},
+      glide={50},
+    },
+    palettes={
+      {[13]=3, [2]=11, [15]=7, [12]=1, [9]=10},
+      {[13]=9, [2]=15, [15]=10, [12]=10, [9]=15},
+      {[13]=7, [2]=6, [15]=6, [12]=13, [9]=5},
+    }
+  },
   speed=1.75,
   walk=.75,
   flap=1,
@@ -184,9 +198,16 @@ function brid:control()
 end
 
 waps = prototype({
-  sprite=makesprite({
-    idle={1, 2, speed=1/18}
-  }),
+  sprite=makesprite{
+    animations={
+      idle={1, 2, speed=1/18}
+    },
+    palettes={
+      {[10]=9, [4]=0, [9]=5, [8]=4, [6]=7},
+      {[10]=11, [4]=2, [9]=4, [8]=3, [6]=9},
+      {[10]=13, [4]=1, [9]=6, [8]=10, [6]=6},
+    }
+  },
   name='waps',
   accel=10, speed=1,
   gravity=0

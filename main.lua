@@ -80,8 +80,8 @@ function playerselect:update()
 end
 
 function playerselect:draw()
-  rectfill(0, 0, 127, 127, 0)
-  print("choose your aminal", 28, 5, 8)
+  rectfill(0, 0, 127, 127, 12)
+  print("choose your aminal", 28, 5, 10)
 
   y = 30
   for r, row in pairs(self.options) do
