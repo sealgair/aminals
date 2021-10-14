@@ -30,12 +30,12 @@ function playerselect:update()
     selected = self.selected[player]
 
 
-    if btnp(4, player-1) then
+    if btnp(b.o, player-1) then
       chosen.x, chosen.y = 0, 0
       self.palettes[player] = player-1
     end
 
-    if btnp(5, player-1) then
+    if btnp(b.x, player-1) then
       if chosen == selected and chosen != coord(0, 0) then
         players = {}
         for p, pos in pairs(self.chosen) do
@@ -148,7 +148,7 @@ function game:start(players)
   }
   for p, popts in pairs(players) do
     x, y = unpack(starts[p])
-    add(self.objects, popts.player:new(p-1, x, y, popts.palette))
+    add(self.objects, popts.player:new(self, p-1, x, y, popts.palette))
   end
   gamestate = self
 end
@@ -156,6 +156,13 @@ end
 function game:update()
   for o in all(self.objects) do
     o:update()
+  end
+end
+
+function game:send_touch(box, signal)
+  touches = {}
+  for o in all(self.objects) do
+    if (intersects(box, o)) o:touched(signal)
   end
 end
 

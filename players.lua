@@ -5,11 +5,17 @@ playerbase = {
   accel=5, speed=1,
   gravity=1,
   vx=0, vy=0,
-  p=0
+  p=0,
+  atkspr=79,
+  attacking=0,
+  dying=0,
+  spawned=0,
 }
 
-function playerbase:new(p, x, y, palette)
+function playerbase:new(world, p, x, y, palette)
   return prototype({
+    world=world,
+    spawn={x=x, y=y},
     p=p, x=x, y=y,
     sprite=prototype({palette=palette}, self.sprite)
   }, self)
@@ -71,12 +77,44 @@ function playerbase:update()
   self.sprite:advance(dt, self:animstate())
   self:control()
   self:move()
+
+  for state in all{'attacking', 'dying', 'spawned'} do
+    if self[state] > 0 then
+      self[state] -= dt
+      if self[state] <= 0 then
+        self[state] = 0
+        self:statecomplete(state)
+      end
+    end
+  end
+end
+
+function playerbase:isvulnerable()
+  return self.spawned <= 0
+end
+
+function playerbase:touched(signal)
+  if signal == "attack" and self:isvulnerable() then
+    self.dying = 0.5
+  end
+end
+
+function playerbase:statecomplete(state)
+  if state == "dying" then
+    self.x=self.spawn.x
+    self.y=self.spawn.y
+    self.spawned = 2
+  end
 end
 
 function playerbase:draw(x, y)
   x = x or self.x
   y = y or self.y
-  self.sprite:draw(x, y, {flipx=self.facing == 1})
+  flipx=self.facing == 1
+  self.sprite:draw(x, y, {flipx=flipx})
+  if self.attacking > 0 then
+    spr(self.atkspr, x+self.w*self.facing, y, 1, 1, flipx)
+  end
 end
 
 shru = prototype({
@@ -85,6 +123,8 @@ shru = prototype({
       animations={
         idle={16,16,16,16,16,16,18, speed=1.5},
         walk={16,17},
+        attacking={19,20, speed=0.2},
+        dying={21},
       },
       palettes={
         {[4]=5, [15]=6, [1]=11},
@@ -96,10 +136,30 @@ shru = prototype({
 }, playerbase)
 
 function shru:animstate()
-  if self.walking then
+  if self.dying > 0 then
+    return 'dying'
+  elseif self.attacking > 0 then
+    return 'attacking'
+  elseif self.walking then
     return 'walk'
   else
     return 'idle'
+  end
+end
+
+function shru:control()
+  playerbase.control(self)
+  if btnp(b.x, self.p) then
+    self.attacking = 0.2
+  end
+end
+
+function shru:update()
+  playerbase.update(self)
+  if self.attacking > 0 then
+    self.world:send_touch({
+      x=self.x+self.w*self.facing, y=self.y, w=6, h=6
+    }, "attack")
   end
 end
 
@@ -123,7 +183,7 @@ function forg:control()
   dir = dpad('x', self.p)
   if (dir != 0) self.facing = dir
 
-  if btn(5, self.p) and (self.grounded or self.jump > 0) then
+  if btn(b.o, self.p) and (self.grounded or self.jump > 0) then
     if self.grounded then
       self.jump = 0.2
     else
@@ -188,7 +248,7 @@ function brid:control()
     self.vx += dv*self.facing
     -- self.vx = bound(-self.speed, self.vx+self.accel*self.facing*.04, self.speed)
   end
-  if btnp(5, self.p) and self.flapped <= 0 and self.flaps < self.maxflaps then
+  if btnp(b.o, self.p) and self.flapped <= 0 and self.flaps < self.maxflaps then
     self.flaps += 1
     self.vy = max(-self.flap, self.vy-self.accel)
     self.flapped = 0.3
@@ -226,7 +286,9 @@ end
 
 
 --[[ TODO:
-turt
-sper
+trut
+spid
+mant
+sulg
 funj
 ]]

@@ -2,6 +2,8 @@
 dt = 1/60
 g = 5 * dt
 
+b = {l=0, r=1, u=2, d=3, o=4, x=5}
+
 function debug(val, opts)
   opts = opts or {}
   x = opts.x or 0
@@ -68,4 +70,9 @@ function dpad(axis, player, press)
   if (fn(axis[1], player)) return -1
   if (fn(axis[2], player)) return 1
   return 0
+end
+
+function intersects(a, b)
+  return (a.x+a.w > b.x and b.x+b.w > a.x) and
+      (a.y+a.h > b.y and b.y+b.h > a.y)
 end
