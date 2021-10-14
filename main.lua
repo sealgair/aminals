@@ -28,7 +28,12 @@ function playerselect:update()
   for player=1,4 do
     chosen = self.chosen[player]
     selected = self.selected[player]
-    if (btnp(4, player-1)) chosen.x, chosen.y = 0, 0
+
+
+    if btnp(4, player-1) then
+      chosen.x, chosen.y = 0, 0
+      self.palettes[player] = player-1
+    end
 
     if btnp(5, player-1) then
       if chosen == selected and chosen != coord(0, 0) then
@@ -80,8 +85,8 @@ function playerselect:update()
 end
 
 function playerselect:draw()
-  rectfill(0, 0, 127, 127, 12)
-  print("choose your aminal", 28, 5, 10)
+  rectfill(0, 0, 127, 127, 0)
+  print("choose your aminal", 28, 5, 8)
 
   y = 30
   for r, row in pairs(self.options) do
@@ -103,18 +108,33 @@ function playerselect:draw()
           if (drawn < 3) line(x+2, y+14, x+13, y+14) -- bottom: p1 p2
           if (drawn%2 == 1) line(x+1, y+2, x+1, y+13) -- left: p1 p3
           if (drawn != 3) line(x+14, y+2, x+14, y+13) -- right: p1 p2 p4
-
-          col.sprite:draw(2 + (player-1)%2 * 116, 2, {palette=self.palettes[player]})
         end
         if rc == selected then
           print(player, x+(player-1)*4, y-6)
         end
       end
+      rectfill(x+3, y+3, x+12, y+12, 12)
       col.sprite:draw(x+4, y+4)
       print(col.name, x+1, y+17, 7)
       x += 64
     end
     y += 50
+  end
+
+  for player=1,4 do
+    chosen = self.chosen[player]
+    px = 1 + (player-1)%2 * 114
+    py = 1
+    if (player > 2) py += 114
+    rect(px, py, px+12, py+12, 9)
+    color(self.player_colors[player])
+    print(player, px+5, py+4)
+
+    if chosen != coord(0,0) then
+      choice = self.options[chosen.y][chosen.x],
+      rectfill(px+1, py+1, px+11, py+11, 12)
+      choice.sprite:draw(px+2, py+2, {palette=self.palettes[player]})
+    end
   end
 end
 
