@@ -133,6 +133,7 @@ shru = prototype({
       },
   },
   accel=8, speed=2.5,
+  cooldown=0
 }, playerbase)
 
 function shru:animstate()
@@ -149,13 +150,19 @@ end
 
 function shru:control()
   playerbase.control(self)
-  if btnp(b.x, self.p) then
+  if btnp(b.x, self.p) and self.cooldown <= 0 then
     self.attacking = 0.2
+    self.cooldown = 0.7
   end
 end
 
 function shru:update()
   playerbase.update(self)
+  if self.cooldown > 0 then
+    self.cooldown -= dt
+  else
+    self.cooldown = 0
+  end
   if self.attacking > 0 then
     self.world:send_touch({
       x=self.x+self.w*self.facing, y=self.y, w=6, h=6
