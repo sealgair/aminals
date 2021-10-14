@@ -159,10 +159,10 @@ function game:update()
   end
 end
 
-function game:send_touch(box, signal)
+function game:send_touch(box, signal, sender)
   touches = {}
   for o in all(self.objects) do
-    if (intersects(box, o)) o:touched(signal)
+    if (o != sender and intersects(box, o)) o:touched(signal, sender)
   end
 end
 

@@ -8,8 +8,11 @@ playerbase = {
   p=0,
   atkspr=79,
   attacking=0,
+  attklen=0.2,
+  attkcool=0.7,
   dying=0,
   spawned=0,
+  cooldown=0,
 }
 
 function playerbase:new(world, p, x, y, palette)
@@ -67,10 +70,23 @@ function playerbase:control()
     -- speed up
     self.vx = bound(-self.speed, self.vx + self.accel*dir*dt, self.speed)
   end
+
+  if btnp(b.x, self.p) and self.cooldown <= 0 then
+    self.attacking = self.attklen
+    self.cooldown = self.attkcool
+  end
 end
 
 function playerbase:animstate()
-  return 'idle'
+  if self.dying > 0 then
+    return 'dying'
+  elseif self.attacking > 0 then
+    return 'attacking'
+  elseif self.walking then
+    return 'walk'
+  else
+    return 'idle'
+  end
 end
 
 function playerbase:update()
@@ -78,7 +94,7 @@ function playerbase:update()
   self:control()
   self:move()
 
-  for state in all{'attacking', 'dying', 'spawned'} do
+  for state in all{'attacking', 'dying', 'spawned', 'cooldown'} do
     if self[state] > 0 then
       self[state] -= dt
       if self[state] <= 0 then
@@ -93,7 +109,7 @@ function playerbase:isvulnerable()
   return self.spawned <= 0
 end
 
-function playerbase:touched(signal)
+function playerbase:touched(signal, sender)
   if signal == "attack" and self:isvulnerable() then
     self.dying = 0.5
   end
@@ -133,40 +149,14 @@ shru = prototype({
       },
   },
   accel=8, speed=2.5,
-  cooldown=0
 }, playerbase)
-
-function shru:animstate()
-  if self.dying > 0 then
-    return 'dying'
-  elseif self.attacking > 0 then
-    return 'attacking'
-  elseif self.walking then
-    return 'walk'
-  else
-    return 'idle'
-  end
-end
-
-function shru:control()
-  playerbase.control(self)
-  if btnp(b.x, self.p) and self.cooldown <= 0 then
-    self.attacking = 0.2
-    self.cooldown = 0.7
-  end
-end
 
 function shru:update()
   playerbase.update(self)
-  if self.cooldown > 0 then
-    self.cooldown -= dt
-  else
-    self.cooldown = 0
-  end
   if self.attacking > 0 then
     self.world:send_touch({
       x=self.x+self.w*self.facing, y=self.y, w=6, h=6
-    }, "attack")
+    }, "attack", self)
   end
 end
 
@@ -212,6 +202,9 @@ brid = prototype({
       walk={48,49},
       flap={51},
       glide={50},
+      dive={52},
+      peck={53},
+      dying={54},
     },
     palettes={
       {[13]=3, [2]=11, [15]=7, [12]=1, [9]=10},
@@ -229,14 +222,20 @@ brid = prototype({
 }, playerbase)
 
 function brid:animstate()
-  if self.grounded then
-    if self.walking then
+  if self.dying > 0 then
+    return 'dying'
+  elseif self.grounded then
+    if self.attacking > 0 then
+      return 'peck'
+    elseif self.walking then
       return 'walk'
     else
       return 'idle'
     end
   else
-    if self.flapped > 0 then
+    if self.attacking > 0 then
+      return 'dive'
+    elseif self.flapped > 0 then
       return 'flap'
     else
       return 'glide'
@@ -249,11 +248,16 @@ function brid:control()
   if self.grounded then
     self.flaps = 0
     self.vx = bound(-self.walk, self.vx, self.walk)
+  elseif self.attacking > 0 then
+    --dive
+    dvx = max(self.speed - abs(self.vx), 0)
+    self.vx += dvx*self.facing
+    dvy = max(self.speed - abs(self.vy), 0)
+    self.vy += dvy
   else
     --glide
     dv = max(self.speed*.5 - abs(self.vx), 0)
     self.vx += dv*self.facing
-    -- self.vx = bound(-self.speed, self.vx+self.accel*self.facing*.04, self.speed)
   end
   if btnp(b.o, self.p) and self.flapped <= 0 and self.flaps < self.maxflaps then
     self.flaps += 1
@@ -261,6 +265,18 @@ function brid:control()
     self.flapped = 0.3
   else
     self.flapped -= dt
+  end
+end
+
+function brid:update()
+  playerbase.update(self)
+  if self.attacking > 0 then
+    x, y = self.x+(self.w-2)*self.facing, self.y
+    if not self.grounded then
+      x-=self.facing
+      y+=4
+    end
+    self.world:send_touch({x=x, y=y, w=6, h=6}, "attack", self)
   end
 end
 
