@@ -21,7 +21,7 @@ playerselect = {
     coord(0,0),
   },
   player_colors = {8, 12, 11, 10},
-  palettes = {0,0,0,0},
+  palettes = {0,1,2,3},
 }
 
 function playerselect:update()
@@ -58,7 +58,16 @@ function playerselect:update()
         selected.y = wrap(1, selected.y+dy, 2)
       else
         -- choose color
-        self.palettes[player] = wrap(0, self.palettes[player]+dy, 3)
+        repeat
+          self.palettes[player] = wrap(0, self.palettes[player]+dy, 3)
+          duped = false
+          for op=1,4 do
+            if (op != player and self.chosen[op] == chosen and
+                self.palettes[op] == self.palettes[player]) then
+              duped = true
+            end
+          end
+        until not duped
       end
     end
   end
