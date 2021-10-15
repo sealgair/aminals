@@ -76,3 +76,7 @@ function intersects(a, b)
   return (a.x+a.w > b.x and b.x+b.w > a.x) and
       (a.y+a.h > b.y and b.y+b.h > a.y)
 end
+
+function easeoutback(t)
+  return 1-(2*(t-.5))^4
+end

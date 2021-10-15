@@ -9,7 +9,7 @@ playerbase = {
   atkspr=79,
   attacking=0,
   attklen=0.2,
-  attkcool=0.7,
+  attkcool=0.5,
   dying=0,
   spawned=0,
   cooldown=0,
@@ -60,6 +60,11 @@ function playerbase:move()
 end
 
 function playerbase:control()
+  self:walk()
+  self:attack()
+end
+
+function playerbase:walk()
   dir = dpad('x', self.p)
   self.walking = dir != 0
   if dir == 0 then
@@ -70,10 +75,12 @@ function playerbase:control()
     -- speed up
     self.vx = bound(-self.speed, self.vx + self.accel*dir*dt, self.speed)
   end
+end
 
+function playerbase:attack()
   if btnp(b.x, self.p) and self.cooldown <= 0 then
     self.attacking = self.attklen
-    self.cooldown = self.attkcool
+    self.cooldown = self.attklen + self.attkcool
   end
 end
 
@@ -128,7 +135,7 @@ function playerbase:draw(x, y)
   y = y or self.y
   flipx=self.facing == 1
   self.sprite:draw(x, y, {flipx=flipx})
-  if self.attacking > 0 then
+  if self.attacking > 0 and self.atkspr > 0 then
     spr(self.atkspr, x+self.w*self.facing, y, 1, 1, flipx)
   end
 end
@@ -164,7 +171,9 @@ forg = prototype({
   name='forg',
   sprite=makesprite{
     animations={
-      idle={32}
+      idle={32},
+      jump={33},
+      lick={34},
     },
     palettes={
       {[11]=8, [3]=2, [10]=11},
@@ -174,9 +183,26 @@ forg = prototype({
   },
   accel=8, speed=1.8,
   jump=0,
+  attklen=0.5,
+  atkspr=0,
 }, playerbase)
 
-function forg:control()
+function forg:animstate()
+  if self.attacking > 0 then
+    return "lick"
+  elseif self.grounded then
+    return "idle"
+  else
+    return "jump"
+  end
+end
+
+function forg:draw()
+  playerbase.draw(self)
+  debug(self:animstate())
+end
+
+function forg:walk()
   dir = dpad('x', self.p)
   if (dir != 0) self.facing = dir
 
@@ -187,10 +213,20 @@ function forg:control()
       self.jump -= dt
     end
     self.vx = self.speed * self.facing
-    self.vy = -self.speed
+    self.vy = -self.speed/2
   else
     self.jump = 0
     self.vx = max(abs(self.vx) - self.accel*dt*2, 0) * sign(self.vx)
+  end
+end
+
+function forg:draw()
+  playerbase.draw(self)
+  if self.attacking > 0 then
+    x, y = self.x+4, self.y+3
+    d=16*easeoutback(self.attacking/self.attklen)
+    line(x+2*self.facing, y, x+d*self.facing, y, 8)
+    circ(x+d*self.facing, y, 1, 8)
   end
 end
 
@@ -243,8 +279,8 @@ function brid:animstate()
   end
 end
 
-function brid:control()
-  playerbase.control(self)
+function brid:walk()
+  playerbase.walk(self)
   if self.grounded then
     self.flaps = 0
     self.vx = bound(-self.walk, self.vx, self.walk)
