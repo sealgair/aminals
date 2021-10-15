@@ -96,12 +96,16 @@ function playerbase:animstate()
   end
 end
 
+function playerbase:states()
+  return {'attacking', 'dying', 'spawned', 'cooldown'}
+end
+
 function playerbase:update()
   self.sprite:advance(dt, self:animstate())
   self:control()
   self:move()
 
-  for state in all{'attacking', 'dying', 'spawned', 'cooldown'} do
+  for state in all(self:states()) do
     if self[state] > 0 then
       self[state] -= dt
       if self[state] <= 0 then
@@ -147,7 +151,8 @@ shru = prototype({
         idle={16,16,16,16,16,16,18, speed=1.5},
         walk={16,17},
         attacking={19,20, speed=0.2},
-        dying={21},
+        dash={21},
+        dying={22},
       },
       palettes={
         {[4]=5, [15]=6, [1]=11},
@@ -156,7 +161,36 @@ shru = prototype({
       },
   },
   accel=8, speed=2.5,
+  dashing=0, dashcool=0,
 }, playerbase)
+
+function shru:animstate()
+  if self.dashing > 0 then
+    return "dash"
+  else
+    return playerbase.animstate(self)
+  end
+end
+
+function shru:isvulnerable()
+  return playerbase.isvulnerable(self) && self.dashing <= 0
+end
+
+function shru:states()
+  states = playerbase.states(self)
+  add(states, 'dashing')
+  add(states, 'dashcool')
+  return states
+end
+
+function shru:walk()
+  playerbase.walk(self)
+  if btnp(b.o) and self.dashcool <= 0 then
+    self.dashing = 0.2
+    self.dashcool = 1
+  end
+  if (self.dashing > 0) self.vx = self.speed*self.facing
+end
 
 function shru:update()
   playerbase.update(self)
@@ -174,6 +208,7 @@ forg = prototype({
       idle={32},
       jump={33},
       lick={34},
+      dying={35},
     },
     palettes={
       {[11]=8, [3]=2, [10]=11},
