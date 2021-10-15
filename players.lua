@@ -1,3 +1,8 @@
+dielen = 1.5
+function dieanim(spr)
+  return {spr, 14, 15, 0, speed=dielen}
+end
+
 playerbase = {
   x=56, y=112,
   w=8, h=8,
@@ -13,6 +18,7 @@ playerbase = {
   dying=0,
   spawned=0,
   cooldown=0,
+  poisoned=0,
 }
 
 function playerbase:new(world, p, x, y, palette)
@@ -60,8 +66,10 @@ function playerbase:move()
 end
 
 function playerbase:control()
-  self:walk()
-  self:attack()
+  if self.dying <= 0 then
+    self:walk()
+    self:attack()
+  end
 end
 
 function playerbase:walk()
@@ -97,7 +105,7 @@ function playerbase:animstate()
 end
 
 function playerbase:states()
-  return {'attacking', 'dying', 'spawned', 'cooldown'}
+  return {'attacking', 'dying', 'spawned', 'cooldown', 'poisoned'}
 end
 
 function playerbase:update()
@@ -120,17 +128,43 @@ function playerbase:isvulnerable()
   return self.spawned <= 0
 end
 
+function playerbase:respawn()
+  self.x=self.spawn.x
+  self.y=self.spawn.y
+  self.spawned = 2
+end
+
+function playerbase:die()
+  self.dying = dielen
+  self.poisoner = nil
+  self.vx = 0
+end
+
+function playerbase:poison(poisoner)
+  self.poisoned = 5
+  self.poisoner = sender
+end
+
+function playerbase:cure(poisoner)
+  self.poisoned = 0
+  self.poisoner = nil
+end
+
 function playerbase:touched(signal, sender)
-  if signal == "attack" and self:isvulnerable() then
-    self.dying = 0.5
+  if self:isvulnerable() then
+    if signal == "attack" then
+      self:die()
+    elseif signal == "poison" then
+      self:poison(sender)
+    end
   end
 end
 
 function playerbase:statecomplete(state)
   if state == "dying" then
-    self.x=self.spawn.x
-    self.y=self.spawn.y
-    self.spawned = 2
+    self:respawn()
+  elseif state == "poisoned" then
+    self:die()
   end
 end
 
@@ -138,6 +172,11 @@ function playerbase:draw(x, y)
   x = x or self.x
   y = y or self.y
   flipx=self.facing == 1
+
+  if self.poisoned > 0 then
+    spr(13, x, y-4)
+  end
+
   self.sprite:draw(x, y, {flipx=flipx})
   if self.attacking > 0 and self.atkspr > 0 then
     spr(self.atkspr, x+self.w*self.facing, y, 1, 1, flipx)
@@ -152,7 +191,7 @@ shru = prototype({
         walk={16,17},
         attacking={19,20, speed=0.2},
         dash={21},
-        dying={22},
+        dying=dieanim(22),
       },
       palettes={
         {[4]=5, [15]=6, [1]=11},
@@ -173,7 +212,7 @@ function shru:animstate()
 end
 
 function shru:isvulnerable()
-  return playerbase.isvulnerable(self) && self.dashing <= 0
+  return playerbase.isvulnerable(self) and self.dashing <= 0
 end
 
 function shru:states()
@@ -208,7 +247,7 @@ forg = prototype({
       idle={32},
       jump={33},
       lick={34},
-      dying={35},
+      dying=dieanim(35),
     },
     palettes={
       {[11]=8, [3]=2, [10]=11},
@@ -305,7 +344,7 @@ brid = prototype({
       glide={50},
       dive={52},
       peck={53},
-      dying={54},
+      dying=dieanim(54),
     },
     palettes={
       {[13]=3, [2]=11, [15]=7, [12]=1, [9]=10},
@@ -384,7 +423,9 @@ end
 waps = prototype({
   sprite=makesprite{
     animations={
-      idle={1, 2, speed=1/18}
+      idle={1, 2, speed=1/18},
+      attacking={3},
+      dying=dieanim(4),
     },
     palettes={
       {[10]=9, [4]=0, [9]=5, [8]=4, [6]=7},
@@ -397,8 +438,18 @@ waps = prototype({
   gravity=0
 }, playerbase)
 
-function waps:control()
-  playerbase.control(self)
+function waps:die()
+  playerbase.die(self)
+  self.gravity = 1
+end
+
+function waps:respawn()
+  playerbase.respawn(self)
+  self.gravity = 0
+end
+
+function waps:walk()
+  playerbase.walk(self)
   dir = dpad('y', self.p)
 
   if dir==0 then
@@ -406,6 +457,21 @@ function waps:control()
   else
     self.vy = bound(-self.speed, self.vy + self.accel*dir*dt, self.speed)
   end
+  self.walking = false
+end
+
+function waps:update()
+  playerbase.update(self)
+  if self.attacking > 0 then
+    self.world:send_touch({
+      x=self.x+self.w*self.facing, y=self.y, w=6, h=6
+    }, "poison", self)
+  end
+end
+
+function waps:touched(signal, sender)
+  playerbase.touched(self, signal, sender)
+  sender:cure(self)
 end
 
 
