@@ -279,7 +279,7 @@ brid = prototype({
     }
   },
   speed=1.75,
-  walk=.75,
+  walkspeed=.75,
   flap=1,
   flapped=0,
   flaps=0,
@@ -313,7 +313,7 @@ function brid:walk()
   playerbase.walk(self)
   if self.grounded then
     self.flaps = 0
-    self.vx = bound(-self.walk, self.vx, self.walk)
+    self.vx = bound(-self.walkspeed, self.vx, self.walkspeed)
   elseif self.attacking > 0 then
     --dive
     dvx = max(self.speed - abs(self.vx), 0)
