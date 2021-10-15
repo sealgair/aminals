@@ -185,6 +185,10 @@ forg = prototype({
   jump=0,
   attklen=0.5,
   atkspr=0,
+  orientation=0,
+  lookspeed=0.25*2,
+  tonguelen=20,
+  buzz=0,
 }, playerbase)
 
 function forg:animstate()
@@ -195,11 +199,6 @@ function forg:animstate()
   else
     return "jump"
   end
-end
-
-function forg:draw()
-  playerbase.draw(self)
-  debug(self:animstate())
 end
 
 function forg:walk()
@@ -218,15 +217,46 @@ function forg:walk()
     self.jump = 0
     self.vx = max(abs(self.vx) - self.accel*dt*2, 0) * sign(self.vx)
   end
+
+  look = dpad('y', self.p)
+  if (dir != 0) look += 1
+  self.orientation = bound(0, self.orientation-look*self.lookspeed*dt, .25)
+end
+
+function forg:update()
+  playerbase.update(self)
+  if self.attacking > 0 then
+    x, y = self:tonguepos()
+    self.world:send_touch({
+      x=x-self.facing, y=y-1, w=3, h=3
+    }, "attack", self)
+  end
+end
+
+function forg:tonguepos(d)
+  d = d or self.tonguelen*easeoutback(self.attacking/self.attklen)
+  x, y = self.x+4, self.y+3
+  return x+d*self.facing*orx, y+d*ory
 end
 
 function forg:draw()
   playerbase.draw(self)
+  orx = cos(self.orientation)
+  ory = sin(self.orientation)
+
+  x, y = self:tonguepos(8)
+  circ(x, y, 0, 0)
+  bm = 4
+  if self.buzz > bm/2 then
+    circ(x+1, y-1, 0, 7)
+  end
+  self.buzz +=1
+  if (self.buzz > bm) self.buzz = 0
+
   if self.attacking > 0 then
-    x, y = self.x+4, self.y+3
-    d=16*easeoutback(self.attacking/self.attklen)
-    line(x+2*self.facing, y, x+d*self.facing, y, 8)
-    circ(x+d*self.facing, y, 1, 8)
+    tx,ty  = self:tonguepos()
+    line(self.x+4+2*self.facing, self.y+3, tx, ty, 8)
+    circ(tx, ty, 1, 8)
   end
 end
 
