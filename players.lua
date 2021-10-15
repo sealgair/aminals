@@ -1,7 +1,12 @@
 dielen = 1.5
 function dieanim(spr)
-  return {spr, 14, 15, 0, speed=dielen}
+  return {spr, spr, 14, 15, 0, 0, speed=dielen}
 end
+
+poison = makesprite{
+  animations={idle={13}},
+  opacity={1,1},
+}
 
 playerbase = {
   x=56, y=112,
@@ -174,10 +179,20 @@ function playerbase:draw(x, y)
   flipx=self.facing == 1
 
   if self.poisoned > 0 then
-    spr(13, x, y-4)
+    poison:draw(x, y-4)
   end
 
-  self.sprite:draw(x, y, {flipx=flipx})
+  opts = {flipx=flipx}
+  if self.spawned > 0 then
+    sp = self.spawned / dielen
+    l=6
+    if sp > 0.5 then
+      opts.opacity = {1, 1+flr(l*(sp*2-1))}
+    else
+      opts.opacity = {1+flr(l*2*(.5-sp)), 1}
+    end
+  end
+  self.sprite:draw(x, y, opts)
   if self.attacking > 0 and self.atkspr > 0 then
     spr(self.atkspr, x+self.w*self.facing, y, 1, 1, flipx)
   end
