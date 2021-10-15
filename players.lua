@@ -45,14 +45,14 @@ function playerbase:move()
 
   -- collide with map tiles
   self.x += self.vx
-  sx = sign(self.vx)
+  sx = sgn(self.vx)
   while self:collides(self.x, self.y) do
     self.vx = 0
     self.x -= sx
   end
 
   self.y += self.vy
-  sy = sign(self.vy)
+  sy = sgn(self.vy)
   while self:collides(self.x, self.y) do
     self.vy = 0
     self.y -= sy
@@ -77,11 +77,11 @@ function playerbase:walk()
   self.walking = dir != 0
   if dir == 0 then
     -- speed down
-    self.vx = max(abs(self.vx) - self.accel*dt*2, 0) * sign(self.vx)
+    self.vx = max(abs(self.vx) - self.accel*dt*2, 0) * sgn(self.vx)
   else
     self.facing = dir
     -- speed up
-    self.vx = bound(-self.speed, self.vx + self.accel*dir*dt, self.speed)
+    self.vx = mid(-self.speed, self.vx + self.accel*dir*dt, self.speed)
   end
 end
 
@@ -289,12 +289,12 @@ function forg:walk()
     self.vy = -self.speed/2
   else
     self.jump = 0
-    self.vx = max(abs(self.vx) - self.accel*dt*2, 0) * sign(self.vx)
+    self.vx = max(abs(self.vx) - self.accel*dt*2, 0) * sgn(self.vx)
   end
 
   look = dpad('y', self.p)
   if (dir != 0) look += 1
-  self.orientation = bound(0, self.orientation-look*self.lookspeed*dt, .25)
+  self.orientation = mid(0, self.orientation-look*self.lookspeed*dt, .25)
 end
 
 function forg:update()
@@ -387,7 +387,7 @@ function brid:walk()
   playerbase.walk(self)
   if self.grounded then
     self.flaps = 0
-    self.vx = bound(-self.walkspeed, self.vx, self.walkspeed)
+    self.vx = mid(-self.walkspeed, self.vx, self.walkspeed)
   elseif self.attacking > 0 then
     --dive
     dvx = max(self.speed - abs(self.vx), 0)
@@ -453,9 +453,9 @@ function waps:walk()
   dir = dpad('y', self.p)
 
   if dir==0 then
-    self.vy = max(abs(self.vy) - self.accel*dt*2, 0) * sign(self.vy)
+    self.vy = max(abs(self.vy) - self.accel*dt*2, 0) * sgn(self.vy)
   else
-    self.vy = bound(-self.speed, self.vy + self.accel*dir*dt, self.speed)
+    self.vy = mid(-self.speed, self.vy + self.accel*dir*dt, self.speed)
   end
   self.walking = false
 end

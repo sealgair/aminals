@@ -21,19 +21,9 @@ function wrap(min, v, max)
   return v
 end
 
-function bound(b, v, t)
-  return max(b, min(v, t))
-end
-
-function sign(v)
-  if (v >= 0) return 1
-  return -1
-end
-
 function mfget(x, y, f)
   return fget(mget(x/8, y/8), f)
 end
-
 
 function prototype(a, b)
   mt = {__index = b}
