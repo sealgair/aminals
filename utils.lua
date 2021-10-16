@@ -5,6 +5,7 @@ g = 5 * dt
 b = {l=0, r=1, u=2, d=3, o=4, x=5}
 
 function debug(val, opts)
+  bx, by, bc = cursor()
   opts = opts or {}
   x = opts.x or 0
   y = opts.y or 0
@@ -13,6 +14,7 @@ function debug(val, opts)
   rectfill(x, y, 1+(#tostring(val)*4), y+7)
   color(opts.fg or 6)
   print(val, x+1, y+1)
+  cursor(bx, by, bc)
 end
 
 function wrap(min, v, max)
@@ -67,7 +69,8 @@ function intersects(a, b)
       (a.y+a.h > b.y and b.y+b.h > a.y)
 end
 
-function easeoutback(t)
+function easeoutback(t, pow)
+  pow = pow or 4
   return 1-(2*(t-.5))^4
 end
 

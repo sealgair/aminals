@@ -113,6 +113,25 @@ function playerbase:states()
   return {'attacking', 'dying', 'spawned', 'cooldown', 'poisoned'}
 end
 
+function playerbase:hitbox()
+  hb = {
+    x=self.x,
+    y=self.y,
+    w=6, h=6
+  }
+  if self.facing > 0 then
+    --right
+    hb.x += self.w
+  else
+    hb.x -= hb.w
+  end
+  return hb
+end
+
+function playerbase:hitsignal()
+  return "attack"
+end
+
 function playerbase:update()
   self.sprite:advance(dt, self:animstate())
   self:control()
@@ -126,6 +145,10 @@ function playerbase:update()
         self:statecomplete(state)
       end
     end
+  end
+
+  if self.attacking > 0 and self:hitbox() then
+    self.world:send_touch(self:hitbox(), self:hitsignal(), self)
   end
 end
 
@@ -200,6 +223,12 @@ function playerbase:draw(x, y)
   if self.attacking > 0 and self.atkspr > 0 then
     spr(self.atkspr, x+self.w*self.facing, y, 1, 1, flipx)
   end
+
+  -- uncomment to draw hitboxes
+  -- if self.attacking > 0 then
+  --   hb = self:hitbox()
+  --   rect(hb.x, hb.y, hb.x+hb.w, hb.y+hb.h, 7)
+  -- end
 end
 
 shru = prototype({
@@ -248,15 +277,6 @@ function shru:walk()
     self.dashcool = 1
   end
   if (self.dashing > 0) self.vx = self.speed*self.facing
-end
-
-function shru:update()
-  playerbase.update(self)
-  if self.attacking > 0 then
-    self.world:send_touch({
-      x=self.x+self.w*self.facing, y=self.y, w=6, h=6
-    }, "attack", self)
-  end
 end
 
 forg = prototype({
@@ -316,14 +336,13 @@ function forg:walk()
   self.orientation = mid(0, self.orientation-look*self.lookspeed*dt, .25)
 end
 
-function forg:update()
-  playerbase.update(self)
-  if self.attacking > 0 then
-    x, y = self:tonguepos()
-    self.world:send_touch({
-      x=x-self.facing, y=y-1, w=3, h=3
-    }, "attack", self)
-  end
+function forg:hitbox()
+  x, y = self:tonguepos()
+  hb = {
+    x=x-self.facing, y=y-1, w=3, h=3
+  }
+  if (self.facing < 0) hb.x -= hb.w
+  return hb
 end
 
 function forg:tonguepos(d)
@@ -427,6 +446,13 @@ function brid:walk()
   end
 end
 
+function brid:hitbox()
+  hb = playerbase.hitbox(self)
+  hb.x -= 2*self.facing
+  if (not self.grounded) hb.y+=6
+  return hb
+end
+
 function brid:update()
   playerbase.update(self)
   if self.attacking > 0 then
@@ -435,7 +461,6 @@ function brid:update()
       x-=self.facing
       y+=4
     end
-    self.world:send_touch({x=x, y=y, w=6, h=6}, "attack", self)
   end
 end
 
@@ -479,13 +504,8 @@ function waps:walk()
   self.walking = false
 end
 
-function waps:update()
-  playerbase.update(self)
-  if self.attacking > 0 then
-    self.world:send_touch({
-      x=self.x+self.w*self.facing, y=self.y, w=6, h=6
-    }, "poison", self)
-  end
+function waps:hitsignal()
+  return "poison"
 end
 
 function waps:touched(signal, sender)
@@ -505,8 +525,8 @@ trut = prototype({
     },
     palettes={
       {[3]=4, [5]=2, [11]=15, [9]=10},
-      {[3]=13, [5]=2, [11]=7, [9]=14},
-      {[3]=9, [5]=4, [11]=10, [9]=8},
+      {[3]=9, [5]=4, [11]=10, [9]=11},
+      {[3]=0, [5]=10, [11]=7, [9]=8},
     },
   },
   headsprite=sprite:new{
@@ -515,13 +535,47 @@ trut = prototype({
       attacking={6},
     },
   },
+  necklen=0,
+  attklen=1.5,
   speed=.5,
 }, playerbase)
 trut.headsprite.palettes = trut.sprite.palettes
 
+function trut:new(world, p, x, y, palette)
+  new = playerbase.new(self, world, p, x, y, palette)
+  new.headsprite = new.headsprite:new({palette=palette})
+  return new
+end
+
+function trut:attack()
+  playerbase.attack(self)
+  if self.attacking > 0 and not btn(b.x, self.p) then
+    self.attacking = 0
+    self.cooldown = self.attkcool
+  end
+end
+
 function trut:drawsprite(x, y, opts)
-  self.headsprite:draw(x, y, opts)
+  self.headsprite:draw(x+self.necklen*self.facing, y, opts)
   playerbase.drawsprite(self, x, y, opts)
+end
+
+function trut:update()
+  as=32
+  nl=6
+  if self.attacking > 0 then
+    self.necklen =  min(self.necklen+as*dt, nl)
+  else
+    self.necklen =  max(self.necklen-as*dt, 0)
+  end
+  self.headsprite:advance(dt, self:animstate())
+  playerbase.update(self)
+end
+
+function trut:hitbox()
+  hb = playerbase.hitbox(self)
+  hb.x += self.necklen*self.facing
+  return hb
 end
 
 --[[ TODO:

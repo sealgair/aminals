@@ -43,11 +43,9 @@ end
 
 function sprite:advance(amt, state)
   amt = amnt or dt
-  if state != nil then
-    if self.state != state then
-      self.clock = 0
-      self.state = state
-    end
+  if state != nil and self.state != state and self.animations[state] then
+    self.clock = 0
+    self.state = state
   end
   anim = self.animations[self.state]
   self.clock += amt

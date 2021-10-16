@@ -40,10 +40,10 @@ function playerselect:update()
         players = {}
         for p, pos in pairs(self.chosen) do
           if pos != coord(0,0) then
-            add(players, {
+            players[p] = {
               player=self.options[pos.y][pos.x],
               palette=self.palettes[p]
-            })
+            }
           end
         end
         game:start(players)
@@ -137,8 +137,6 @@ function playerselect:draw()
       choice:drawsprite(px+2, py+2, {palette=self.palettes[player]})
     end
   end
-
-  debug(self.palettes[1], {y=20})
 end
 
 game = {
@@ -146,8 +144,10 @@ game = {
 }
 function game:start(players)
   starts = {
-    {8, 16},
+    {24, 16},
     {8, 112},
+    {96, 16},
+    {112, 112},
   }
   for p, popts in pairs(players) do
     x, y = unpack(starts[p])
