@@ -6,7 +6,7 @@ flags = {
 playerselect = {
   options = {
     {shru, forg},
-    {brid, waps},
+    {brid, trut},
   },
   chosen = {
     coord(0,0),
@@ -114,11 +114,12 @@ function playerselect:draw()
         end
       end
       rectfill(x+3, y+3, x+12, y+12, 12)
-      col.sprite:draw(x+4, y+4)
+      col:drawsprite(x+4, y+4)
       print(col.name, x+1, y+17, 7)
       x += 64
     end
     y += 50
+
   end
 
   for player=1,4 do
@@ -133,9 +134,11 @@ function playerselect:draw()
     if chosen != coord(0,0) then
       choice = self.options[chosen.y][chosen.x],
       rectfill(px+1, py+1, px+11, py+11, 12)
-      choice.sprite:draw(px+2, py+2, {palette=self.palettes[player]})
+      choice:drawsprite(px+2, py+2, {palette=self.palettes[player]})
     end
   end
+
+  debug(self.palettes[1], {y=20})
 end
 
 game = {

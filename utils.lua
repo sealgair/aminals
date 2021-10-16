@@ -70,3 +70,7 @@ end
 function easeoutback(t)
   return 1-(2*(t-.5))^4
 end
+
+function clear(c)
+  print("\^c" .. (c or 0))
+end

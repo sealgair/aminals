@@ -3,7 +3,7 @@ function dieanim(spr)
   return {spr, spr, 14, 15, 0, 0, speed=dielen}
 end
 
-poison = makesprite{
+poison = sprite:new{
   animations={idle={13}},
   opacity={1,1},
 }
@@ -31,7 +31,7 @@ function playerbase:new(world, p, x, y, palette)
     world=world,
     spawn={x=x, y=y},
     p=p, x=x, y=y,
-    sprite=prototype({palette=palette}, self.sprite)
+    sprite=self.sprite:new({palette=palette})
   }, self)
 end
 
@@ -173,6 +173,10 @@ function playerbase:statecomplete(state)
   end
 end
 
+function playerbase:drawsprite(x, y, opts)
+  self.sprite:draw(x, y, opts)
+end
+
 function playerbase:draw(x, y)
   x = x or self.x
   y = y or self.y
@@ -192,7 +196,7 @@ function playerbase:draw(x, y)
       opts.opacity = {1+flr(l*2*(.5-sp)), 1}
     end
   end
-  self.sprite:draw(x, y, opts)
+  self:drawsprite(x, y, opts)
   if self.attacking > 0 and self.atkspr > 0 then
     spr(self.atkspr, x+self.w*self.facing, y, 1, 1, flipx)
   end
@@ -200,7 +204,7 @@ end
 
 shru = prototype({
   name='shru',
-  sprite=makesprite{
+  sprite=sprite:new{
       animations={
         idle={16,16,16,16,16,16,18, speed=1.5},
         walk={16,17},
@@ -257,7 +261,7 @@ end
 
 forg = prototype({
   name='forg',
-  sprite=makesprite{
+  sprite=sprite:new{
     animations={
       idle={32},
       jump={33},
@@ -351,7 +355,7 @@ end
 
 brid = prototype({
   name='brid',
-  sprite=makesprite{
+  sprite=sprite:new{
     animations={
       idle={48},
       walk={48,49},
@@ -436,11 +440,11 @@ function brid:update()
 end
 
 waps = prototype({
-  sprite=makesprite{
+  sprite=sprite:new{
     animations={
-      idle={1, 2, speed=1/18},
-      attacking={3},
-      dying=dieanim(4),
+      idle={60, 61, speed=1/18},
+      attacking={62},
+      dying=dieanim(63),
     },
     palettes={
       {[10]=9, [4]=0, [9]=5, [8]=4, [6]=7},
@@ -489,9 +493,38 @@ function waps:touched(signal, sender)
   sender:cure(self)
 end
 
+trut = prototype({
+  name='trut',
+  sprite=sprite:new{
+    animations={
+      idle={1},
+      walk={1,2},
+      attacking={1},
+      defending={3,4},
+      dying=dieanim(7),
+    },
+    palettes={
+      {[3]=4, [5]=2, [11]=15, [9]=10},
+      {[3]=13, [5]=2, [11]=7, [9]=14},
+      {[3]=9, [5]=4, [11]=10, [9]=8},
+    },
+  },
+  headsprite=sprite:new{
+    animations={
+      idle={5},
+      attacking={6},
+    },
+  },
+  speed=.5,
+}, playerbase)
+trut.headsprite.palettes = trut.sprite.palettes
+
+function trut:drawsprite(x, y, opts)
+  self.headsprite:draw(x, y, opts)
+  playerbase.drawsprite(self, x, y, opts)
+end
 
 --[[ TODO:
-trut
 spid
 mant
 sulg
