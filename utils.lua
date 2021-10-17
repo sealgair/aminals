@@ -4,6 +4,12 @@ g = 5 * dt
 
 b = {l=0, r=1, u=2, d=3, o=4, x=5}
 
+function printc(str, x, y, c)
+  l = #tostr(str)*4
+  h=l/2
+  print(str, x-h, y, c)
+end
+
 function debug(val, opts)
   bx, by, bc = cursor()
   opts = opts or {}
@@ -76,4 +82,27 @@ end
 
 function clear(c)
   print("\^c" .. (c or 0))
+end
+
+function insert(t, v, i)
+  for j=#t,i,-1 do
+    t[j+1] = t[j]
+  end
+  t[i] = v
+end
+
+function sort(t, bigger)
+  local r = {}
+  for v in all(t) do
+    local ins = false
+    for i=1,#r do
+      if bigger(r[i], v) then
+        insert(r, v, i)
+        ins = true
+        break
+      end
+    end
+    if (not ins) add(r, v)
+  end
+  return r
 end

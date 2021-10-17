@@ -24,6 +24,8 @@ playerbase = {
   spawned=0,
   cooldown=0,
   poisoned=0,
+  deaths=0,
+  kills=0,
 }
 
 function playerbase:new(world, p, x, y, palette)
@@ -31,6 +33,7 @@ function playerbase:new(world, p, x, y, palette)
     world=world,
     spawn={x=x, y=y},
     p=p, x=x, y=y,
+    kills=0, deaths=0, spawned=0, -- new game overrides
     sprite=self.sprite:new({palette=palette})
   }, self)
 end
@@ -42,6 +45,10 @@ function playerbase:collides(x, y)
     end
   end
   return false
+end
+
+function playerbase:score()
+  return max(self.kills*2 - self.deaths, 0)
 end
 
 function playerbase:move()
@@ -164,12 +171,17 @@ function playerbase:isvulnerable()
 end
 
 function playerbase:respawn()
+  self.deaths += 1
+  self.killer.kills += 1
+  self.killer = nil
+
   self.x=self.spawn.x
   self.y=self.spawn.y
   self.spawned = 2
 end
 
-function playerbase:die()
+function playerbase:die(killer)
+  self.killer = killer
   self.dying = dielen
   self.poisoner = nil
   self.vx = 0
@@ -188,7 +200,7 @@ end
 function playerbase:touched(signal, sender)
   if self:isvulnerable() then
     if signal == "attack" then
-      self:die()
+      self:die(sender)
     elseif signal == "poison" then
       self:poison(sender)
     end
@@ -199,7 +211,7 @@ function playerbase:statecomplete(state)
   if state == "dying" then
     self:respawn()
   elseif state == "poisoned" then
-    self:die()
+    self:die(self.poisoner)
   end
 end
 
@@ -279,7 +291,7 @@ end
 
 function shru:walk()
   playerbase.walk(self)
-  if btnp(b.o) and self.dashcool <= 0 then
+  if btnp(b.o, self.p) and self.dashcool <= 0 then
     self.dashing = 0.2
     self.dashcool = 1
   end

@@ -1,6 +1,13 @@
+matchend = 1
 
 flags = {
   stop=0
+}
+
+player_colors = {8, 12, 11, 10}
+places = {'1st', '2nd', '3rd', '4th'}
+medals = {
+  {10,9}, {7,6}, {9,4}, {6,5}
 }
 
 playerselect = {
@@ -20,9 +27,15 @@ playerselect = {
     coord(0,0),
     coord(0,0),
   },
-  player_colors = {8, 12, 11, 10},
   palettes = {0,1,2,3},
 }
+
+function playerselect:start()
+  for p=1,4 do
+    self.chosen[p] = coord(0,0)
+  end
+  gamestate = self
+end
 
 function playerselect:update()
   for player=1,4 do
@@ -101,7 +114,7 @@ function playerselect:draw()
       for player=1,4 do
         selected = self.selected[player]
         chosen = self.chosen[player]
-        color(self.player_colors[player])
+        color(player_colors[player])
         if rc == chosen then
           drawn += 1
           if (drawn == 1) line(x+2, y+1, x+13, y+1) -- top: p1
@@ -128,7 +141,7 @@ function playerselect:draw()
     py = 1
     if (player > 2) py += 114
     rect(px, py, px+12, py+12, 9)
-    color(self.player_colors[player])
+    color(player_colors[player])
     print(player, px+5, py+4)
 
     if chosen != coord(0,0) then
@@ -140,7 +153,8 @@ function playerselect:draw()
 end
 
 game = {
-  objects = {}
+  objects={},
+  score=0,
 }
 function game:start(players)
   starts = {
@@ -149,6 +163,7 @@ function game:start(players)
     {96, 16},
     {112, 112},
   }
+  self.objects = {}
   for p, popts in pairs(players) do
     x, y = unpack(starts[p])
     add(self.objects, popts.player:new(self, p-1, x, y, popts.palette))
@@ -157,8 +172,13 @@ function game:start(players)
 end
 
 function game:update()
+  self.score = 0
   for o in all(self.objects) do
+    self.score += o.deaths or 0
     o:update()
+  end
+  if self.score >= matchend then
+    victory:start(self.objects)
   end
 end
 
@@ -179,10 +199,63 @@ function game:draw()
   for i, o in pairs(self.objects) do
     o:draw()
   end
+  rectfill(56, 0, 71, 7, 2)
+  printc(self.score, 64, 1, 10)
+end
+
+victory = {}
+
+function victory:start(players)
+  self.players = players
+  sort(self.players, function(a, b)
+    return a:score() > b:score()
+  end)
+  gamestate = self
+end
+
+function victory:update()
+  if btnp(b.x) then
+    players = {}
+    for player in all(self.players) do
+      players[player.p+1] = {player=player}
+    end
+    game:start(players)
+  end
+  if (btnp(b.o)) playerselect:start()
+end
+
+function victory:outline(player, x, y)
+  for ox in all{-1,0,1} do
+    for oy in all{-1,0,1} do
+      if (ox == 0 or oy == 0) player:drawsprite(x+ox,y+oy, {palette={12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12}})
+    end
+  end
+  player:drawsprite(x,y)
+end
+
+function victory:draw()
+  rectfill(0,0,127,127,1)
+  rectfill(0,0,127,24,2)
+  rectfill(0,24,127,25,10)
+  colw = 128/#self.players
+  for p, player in pairs(self.players) do
+    x = (p-1) * colw
+    if (x > 0) line(x,26,x,116,7)
+    xm = x + colw/2
+    printc(places[p], xm, 8, player_colors[player.p+1])
+    circfill(xm, 24, 9, medals[p][1])
+    circfill(xm, 24, 8, medals[p][2])
+    circfill(xm, 24, 6, 12)
+    player:drawsprite(xm-4, 20)
+    printc('kills: '..player.kills, xm, 38, 8)
+    printc('deaths: '..player.deaths, xm, 48, 66)
+  end
+
+  line(0, 116, 127, 116, 7)
+  print("❎ retry    🅾️ change aminals", 8, 120, 6)
 end
 
 gamestate = playerselect
-
 
 -- system callbacks
 

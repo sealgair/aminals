@@ -33,7 +33,10 @@ function sprite:draw(x,y, opts)
   if (self.blink > on + off) self.blink = 1
   if self.blink <= on then
     palette = opts.palette or self.palette
-    if (palette) pal(self.palettes[palette])
+    if palette then
+      if (type(palette) == "number") palette = self.palettes[palette]
+      pal(palette)
+    end
     spr(self:getcell(), x, y, opts.w or 1, opts.h or 1, opts.flipx, opts.flipy)
     pal()
   end
