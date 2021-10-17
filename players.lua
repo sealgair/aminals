@@ -175,8 +175,7 @@ function playerbase:respawn()
   self.killer.kills += 1
   self.killer = nil
 
-  self.x=self.spawn.x
-  self.y=self.spawn.y
+  self.x, self.y = self.world:spawnpoint()
   self.spawned = 2
 end
 
@@ -374,22 +373,24 @@ end
 
 function forg:draw()
   playerbase.draw(self)
-  orx = cos(self.orientation)
-  ory = sin(self.orientation)
+  if self.dying <= 0 then
+    orx = cos(self.orientation)
+    ory = sin(self.orientation)
 
-  x, y = self:tonguepos(8)
-  circ(x, y, 0, 0)
-  bm = 4
-  if self.buzz > bm/2 then
-    circ(x+1, y-1, 0, 7)
-  end
-  self.buzz +=1
-  if (self.buzz > bm) self.buzz = 0
+    x, y = self:tonguepos(8)
+    circ(x, y, 0, 0)
+    bm = 4
+    if self.buzz > bm/2 then
+      circ(x+1, y-1, 0, 7)
+    end
+    self.buzz +=1
+    if (self.buzz > bm) self.buzz = 0
 
-  if self.attacking > 0 then
-    tx,ty  = self:tonguepos()
-    line(self.x+4+2*self.facing, self.y+3, tx, ty, 8)
-    circ(tx, ty, 1, 8)
+    if self.attacking > 0 then
+      tx,ty  = self:tonguepos()
+      line(self.x+4+2*self.facing, self.y+3, tx, ty, 8)
+      circ(tx, ty, 1, 8)
+    end
   end
 end
 

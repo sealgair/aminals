@@ -1,4 +1,4 @@
-matchend = 1
+matchend = 10
 
 flags = {
   stop=0
@@ -157,18 +157,24 @@ game = {
   score=0,
 }
 function game:start(players)
-  starts = {
-    {24, 16},
-    {8, 112},
-    {96, 16},
-    {112, 112},
-  }
+  self.spawns = {}
+  for x=1,16 do
+    for y=1,16 do
+      if not mfget(x*8, y*8, flags.stop) and mfget(x*8, (y+1)*8, flags.stop) then
+        add(self.spawns, {x*8, y*8})
+      end
+    end
+  end
   self.objects = {}
   for p, popts in pairs(players) do
-    x, y = unpack(starts[p])
+    x, y = self:spawnpoint()
     add(self.objects, popts.player:new(self, p-1, x, y, popts.palette))
   end
   gamestate = self
+end
+
+function game:spawnpoint()
+  return unpack(rnd(self.spawns))
 end
 
 function game:update()
