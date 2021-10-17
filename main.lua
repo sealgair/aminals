@@ -165,8 +165,12 @@ end
 function game:send_touch(box, signal, sender)
   touches = {}
   for o in all(self.objects) do
-    if (o != sender and intersects(box, o)) o:touched(signal, sender)
+    if o != sender and intersects(box, o) then
+      o:touched(signal, sender)
+      add(touches, o)
+    end
   end
+  return touches
 end
 
 function game:draw()

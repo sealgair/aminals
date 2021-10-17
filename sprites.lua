@@ -14,9 +14,7 @@ function sprite:new(opts)
   -- if (not opts.animations) opts = {animations=opts}
   if opts.animations then
     for n, cells in pairs(opts.animations) do
-      if cells.speed == nil then
-        cells.speed = #cells * .15
-      end
+      if (cells.speed == nil) cells.speed = #cells * .15
     end
   end
   return prototype(opts, self)
@@ -24,7 +22,7 @@ end
 
 function sprite:getcell()
   anim = self.animations[self.state]
-  if (anim) return anim[1+flr((self.clock / anim.speed) * #anim)]
+  if (anim) return anim[1+flr((self.clock / (anim.speed+dt)) * #anim)]
 end
 
 function sprite:draw(x,y, opts)
@@ -49,5 +47,11 @@ function sprite:advance(amt, state)
   end
   anim = self.animations[self.state]
   self.clock += amt
-  if (self.clock >= anim.speed) self.clock = 0
+  if (self.clock >= anim.speed) then
+    if anim.once then
+      self.clock = anim.speed
+    else
+      self.clock = 0
+    end
+  end
 end

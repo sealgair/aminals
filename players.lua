@@ -1,6 +1,6 @@
 dielen = 1.5
 function dieanim(spr)
-  return {spr, spr, 14, 15, 0, 0, speed=dielen}
+  return {spr, spr, 14, 15, 0, 0, speed=dielen, once=true}
 end
 
 poison = sprite:new{
@@ -148,8 +148,13 @@ function playerbase:update()
   end
 
   if self.attacking > 0 and self:hitbox() then
-    self.world:send_touch(self:hitbox(), self:hitsignal(), self)
+    touches = self.world:send_touch(self:hitbox(), self:hitsignal(), self)
+    if (#touches > 0) self:attacked(touches)
   end
+end
+
+function playerbase:attacked(touches)
+  -- hook
 end
 
 function playerbase:isvulnerable()
@@ -305,7 +310,9 @@ forg = prototype({
 }, playerbase)
 
 function forg:animstate()
-  if self.attacking > 0 then
+  if self.dying > 0 then
+    return "dying"
+  elseif self.attacking > 0 then
     return "lick"
   elseif self.grounded then
     return "idle"
@@ -520,7 +527,7 @@ trut = prototype({
       idle={1},
       walk={1,2},
       attacking={1},
-      defending={3,4},
+      defending={3,4, once=true},
       dying=dieanim(7),
     },
     palettes={
@@ -537,6 +544,8 @@ trut = prototype({
   },
   necklen=0,
   attklen=1.5,
+  defending=0,
+  defcool=1,
   speed=.5,
 }, playerbase)
 trut.headsprite.palettes = trut.sprite.palettes
@@ -547,16 +556,45 @@ function trut:new(world, p, x, y, palette)
   return new
 end
 
+function trut:states()
+  states = playerbase.states(self)
+  add(states, 'defending')
+  add(states, 'defcool')
+  return states
+end
+
+function trut:animstate()
+  if self.defending > 0 then
+    return 'defending'
+  else
+    return playerbase.animstate(self)
+  end
+end
+
 function trut:attack()
   playerbase.attack(self)
   if self.attacking > 0 and not btn(b.x, self.p) then
     self.attacking = 0
     self.cooldown = self.attkcool
   end
+  if btnp(b.o, self.p) and self.defcool <= 0 then
+    self.defending = 2
+    self.defcool = 2.5
+  end
+  if self.defending > 0 and not btn(b.o, self.p) then
+    self.defending = 0
+    self.defcool = 0.5
+  end
+end
+
+function trut:isvulnerable()
+  return playerbase.isvulnerable(self) and self.defending <= 0
 end
 
 function trut:drawsprite(x, y, opts)
-  self.headsprite:draw(x+self.necklen*self.facing, y, opts)
+  if self.defending + self.dying <= 0 then
+    self.headsprite:draw(x+self.necklen*self.facing, y, opts)
+  end
   playerbase.drawsprite(self, x, y, opts)
 end
 
@@ -570,6 +608,11 @@ function trut:update()
   end
   self.headsprite:advance(dt, self:animstate())
   playerbase.update(self)
+end
+
+function playerbase:attacked(touches)
+  self.attacking = 0
+  self.cooldown = self.attkcool
 end
 
 function trut:hitbox()
