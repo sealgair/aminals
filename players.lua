@@ -113,17 +113,19 @@ function playerbase:states()
   return {'attacking', 'dying', 'spawned', 'cooldown', 'poisoned'}
 end
 
-function playerbase:hitbox()
+function playerbase:hitbox(w, h)
   hb = {
     x=self.x,
     y=self.y,
-    w=6, h=6
+    w=(w or 6),
+    h=(h or 6),
   }
   if self.facing > 0 then
     --right
     hb.x += self.w
   else
-    hb.x -= hb.w
+    --left
+    hb.x -= hb.w+1
   end
   return hb
 end
@@ -616,8 +618,9 @@ function playerbase:attacked(touches)
 end
 
 function trut:hitbox()
-  hb = playerbase.hitbox(self)
-  hb.x += self.necklen*self.facing
+  hb = playerbase.hitbox(self, 4, 4)
+  hb.y += 2
+  hb.x += (self.necklen-2)*self.facing
   return hb
 end
 
