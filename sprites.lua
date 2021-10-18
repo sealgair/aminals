@@ -25,6 +25,13 @@ function sprite:getcell()
   if (anim) return anim[1+flr((self.clock / (anim.speed+dt)) * #anim)]
 end
 
+function sprite:canpal()
+  anim = self.animations[self.state]
+  cell = self:getcell()
+  if (anim.nopal) return anim.nopal[cell] == nil
+  return true
+end
+
 function sprite:draw(x,y, opts)
   opts = opts or {}
   self.blink += 1
@@ -32,7 +39,7 @@ function sprite:draw(x,y, opts)
   on, off = unpack(opacity)
   if (self.blink > on + off) self.blink = 1
   if self.blink <= on then
-    palette = opts.palette or self.palette
+    if (self:canpal()) palette = opts.palette or self.palette
     if palette then
       if (type(palette) == "number") palette = self.palettes[palette]
       pal(palette)

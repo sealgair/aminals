@@ -1,6 +1,10 @@
 dielen = 1.5
 function dieanim(spr)
-  return {spr, spr, 14, 15, 0, 0, speed=dielen, once=true}
+  return {
+    spr, spr, 14, 15, 0, 0,
+    speed=dielen, once=true,
+    nopal={[14]=true,[15]=true}
+  }
 end
 
 poison = sprite:new{
