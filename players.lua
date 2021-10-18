@@ -629,7 +629,7 @@ function trut:update()
   playerbase.update(self)
 end
 
-function playerbase:attacked(touches)
+function trut:attacked(touches)
   self.attacking = 0
   self.cooldown = self.attkcool
 end
