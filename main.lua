@@ -1,4 +1,4 @@
-matchend = 10
+matchend = 1
 
 flags = {
   stop=0
@@ -9,6 +9,8 @@ places = {'1st', '2nd', '3rd', '4th'}
 medals = {
   {10,9}, {7,6}, {9,4}, {6,5}
 }
+
+-- chose player screen
 
 playerselect = {
   options = {
@@ -152,11 +154,16 @@ function playerselect:draw()
   end
 end
 
+
+-- the game itself
+
 game = {
   objects={},
   score=0,
+  clock=0,
 }
 function game:start(players)
+  self.clock = 0
   self.spawns = {}
   for x=1,16 do
     for y=1,16 do
@@ -178,13 +185,14 @@ function game:spawnpoint()
 end
 
 function game:update()
+  self.clock += dt
   self.score = 0
   for o in all(self.objects) do
     self.score += o.deaths or 0
     o:update()
   end
   if self.score >= matchend then
-    victory:start(self.objects)
+    victory:start(self.objects, self.clock)
   end
 end
 
@@ -209,25 +217,72 @@ function game:draw()
   printc(self.score, 64, 1, 10)
 end
 
+
+-- match end screen
+
 victory = {}
 
-function victory:start(players)
+function victory:start(players, time)
+  self.gametime = time
   self.players = players
-  sort(self.players, function(a, b)
-    return a:score() > b:score()
+  self.totalkills = 0
+  for p in all(self.players) do
+    self.totalkills += p.kills
+  end
+  self.players = sort(self.players, function(a, b)
+    return self:makescore(a) > self:makescore(b)
   end)
+
+  self.needs_initials = is_highscore(self:makescore(self.players[1]))
+  self.initials = ""
+  self.initial = "a"
+  self.blink = 0
+
   gamestate = self
 end
 
+function victory:makescore(player)
+  local kpm = player.kills / (self.gametime/60)
+  local ktd = player.kills - player.deaths
+  local kpc = player.kills / self.totalkills
+  return max(0, ceil(kpm * 800 + ktd * 500 + kpc * 2000))
+end
+
 function victory:update()
-  if btnp(b.x) then
-    players = {}
-    for player in all(self.players) do
-      players[player.p+1] = {player=player}
+  if self.needs_initials then
+    local winner = self.players[1]
+    self.blink += dt
+    if (self.blink >= 1) self.blink = 0
+    if btnp(b.x, winner.p) then
+      if self.initial == "`" then
+        if (self.initials != "") save_score(self.initials, winner, self:makescore(winner))
+        self.needs_initials = false
+      else
+        self.initials = self.initials .. self.initial
+        if (#self.initials >= 3) self.initial = "`"
+      end
+    elseif btnp(b.o, winner.p) and #self.initials > 1 then
+      self.initial = sub(self.initials, #self.initials, #self.initials)
+      self.initials = sub(self.initials, 1, #self.initials-1)
+    else
+      m = dpad('y', winner.p, true)
+      if m != 0 then
+        i = ord(self.initial)
+        i = wrap(96, i-m, 122)
+        self.initial = chr(i)
+        self.blink = 0
+      end
     end
-    game:start(players)
+  else
+    if btnp(b.x) then
+      local players = {}
+      for player in all(self.players) do
+        players[player.p+1] = {player=player}
+      end
+      game:start(players)
+    end
+    if (btnp(b.o)) playerselect:start()
   end
-  if (btnp(b.o)) playerselect:start()
 end
 
 function victory:outline(player, x, y)
@@ -254,18 +309,128 @@ function victory:draw()
     circfill(xm, 24, 6, 12)
     player:drawsprite(xm-4, 20)
     printc('kills: '..player.kills, xm, 38, 8)
-    printc('deaths: '..player.deaths, xm, 48, 66)
+    printc('deaths: '..player.deaths, xm, 48, 2)
+    printc(self:makescore(player).." pts", xm, 58, 10)
   end
 
   line(0, 116, 127, 116, 7)
-  print("❎ retry    🅾️ change aminals", 8, 120, 6)
+  if self.needs_initials then
+    print("player "..(self.players[1].p+1).." got a high score!", 12, 2, 10)
+    getinitials = "enter your initials: " .. self.initials
+    local i = self.initial
+    if (i == '`') i = " end"
+    if (self.blink < 0.5) getinitials = getinitials .. i
+    print(getinitials, 13, 120, 7)
+  else
+    print("❎ retry    🅾️ change aminals", 8, 120, 6)
+  end
 end
 
-gamestate = playerselect
+-- highscores screen
+aminals = invert{
+  shru.name,
+  forg.name,
+  brid.name,
+  trut.name,
+  waps.name,
+}
+
+function n2b(initials)
+  local a,b,c = ord(initials, 1, 3)
+  local num = 0
+  for i, v in pairs{a,b,c} do
+    num = num | v >> (i-1)*8
+  end
+  return num
+end
+
+byte = 255
+function b2n(bits)
+  name = ""
+  for i=0,16,8 do
+    n = chr((bits << i) & byte)
+    if (n) name = name .. n
+  end
+  return name
+end
+
+function is_highscore(score)
+  return score > dget(19)
+end
+
+function save_score(initials, player, score)
+  local name = n2b(initials)
+  local aminal = aminals[player.name]
+  local namebits = name | (aminal >> 24)
+
+  local saved = false
+  for i=0,18,2 do
+    local oscore = dget(i+1)
+    if score > oscore then
+      onamebits = dget(i)
+      dset(i, namebits)
+      dset(i+1, score)
+      score = oscore
+      namebits = onamebits
+      saved = saved or i+1/2
+    end
+  end
+  return saved
+end
+
+function get_scores()
+  local scores = {}
+  for i=0,18,2 do
+    local namebits = dget(i)
+    local initials = b2n(namebits)
+    local aid = (bits << 24) & byte
+    local score = dget(i+1)
+    add(scores, {
+      name=initials,
+      aminal=aminals[aid],
+      score=score,
+    })
+  end
+  return scores
+end
+
+function initscores()
+  cartdata("chasec_jouts")
+  clearscores()
+  players = {trut, shru, forg, brid}
+  if not dget(19) then
+    for i=1,10 do
+      save_score("aaa", aminals[i%4+1], i)
+    end
+  end
+end
+
+function clearscores()
+  for i=0,63 do
+    dset(i, 0)
+  end
+end
+
+highscores = {
+  clock = 0
+}
+
+function highscores:start()
+  gamestate = self
+end
+
+function highscores:draw()
+end
+
+function highscores:update()
+  self.clock += dt
+end
 
 -- system callbacks
 
 function _init()
+  initscores()
+  gamestate = playerselect
 end
 
 function _update60()

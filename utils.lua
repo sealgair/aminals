@@ -96,7 +96,7 @@ function sort(t, bigger)
   for v in all(t) do
     local ins = false
     for i=1,#r do
-      if bigger(r[i], v) then
+      if bigger(v, r[i]) then
         insert(r, v, i)
         ins = true
         break
@@ -105,4 +105,12 @@ function sort(t, bigger)
     if (not ins) add(r, v)
   end
   return r
+end
+
+function invert(tbl)
+  new = {}
+  for k, v in pairs(tbl) do
+    new[v] = k
+  end
+  return new
 end
