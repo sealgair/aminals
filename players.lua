@@ -1,7 +1,7 @@
 dielen = 1.5
-function dieanim(spr)
+function dieanim(s)
   return {
-    spr, spr, 14, 15, 0, 0,
+    s, s, 14, 15, 0, 0,
     speed=dielen, once=true,
     nopal={[14]=true,[15]=true}
   }
@@ -20,7 +20,7 @@ playerbase = {
   gravity=1,
   vx=0, vy=0,
   p=0,
-  atkspr=79,
+  atkspr=95,
   attacking=0,
   attklen=0.2,
   attkcool=0.5,

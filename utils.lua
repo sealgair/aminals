@@ -110,3 +110,9 @@ function invert(tbl)
   end
   return new
 end
+
+function find(tbl, item)
+  for k,v in pairs(tbl) do
+    if (v == item) return k
+  end
+end

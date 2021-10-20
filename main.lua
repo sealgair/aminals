@@ -1,4 +1,4 @@
-matchend = 1
+matchend = 10
 highscore_idle = 120
 
 flags = {
@@ -10,6 +10,29 @@ places = {'1st', '2nd', '3rd', '4th'}
 medals = {
   {10,9}, {7,6}, {9,4}, {6,5}
 }
+
+-- menu items
+
+function initmenu()
+  local matchpoints = {5, 10, 20, 50}
+  menuitem(1, matchend .." point match", function(mask)
+    local l = mask & 1 > 0
+    local r = mask & 2 > 0
+    local i = find(matchpoints, matchend) or 2
+    if (l) i -= 1
+    if (r) i += 1
+    i = wrap(1, i, #matchpoints)
+    matchend = matchpoints[i]
+    savesettings()
+    initmenu()
+  end)
+end
+initmenu()
+
+menuitem(2, "clear high scores", function(mask)
+  if (mask & 0b00001) clearscores()
+  return true
+end)
 
 -- chose player screen
 
@@ -106,8 +129,8 @@ function playerselect:update()
 end
 
 function playerselect:draw()
-  rectfill(0, 0, 127, 127, 0)
-  print("choose your aminal", 28, 5, 8)
+  cls(5)
+  print("choose your aminal", 28, 5, 9)
 
   local y = 30
   for r, row in pairs(self.options) do
@@ -136,7 +159,7 @@ function playerselect:draw()
       end
       rectfill(x+3, y+3, x+12, y+12, 12)
       col:drawsprite(x+4, y+4)
-      print(col.name, x+1, y+17, 7)
+      print(col.name, x+1, y+17, 15)
       x += 64
     end
     y += 50
@@ -145,10 +168,10 @@ function playerselect:draw()
 
   for player=1,4 do
     chosen = self.chosen[player]
-    px = 1 + (player-1)%2 * 114
+    px = 1 + (player-1)%2 * 113
     py = 1
-    if (player > 2) py += 114
-    rect(px, py, px+12, py+12, 9)
+    if (player > 2) py += 113
+    rect(px, py, px+12, py+12, 13)
     color(player_colors[player])
     print(player, px+5, py+4)
 
@@ -214,13 +237,13 @@ function game:send_touch(box, signal, sender)
 end
 
 function game:draw()
-  rectfill(0,0,1287,127,12)
+  cls(12)
   map(0, 0, 0, 0, 127, 127)
   for i, o in pairs(self.objects) do
     o:draw()
   end
-  rectfill(56, 0, 71, 7, 2)
-  printc(self.score, 64, 1, 10)
+  spr(78, 56, 0, 2, 1)
+  printc(matchend - self.score, 64, 1, 10)
 end
 
 
@@ -406,7 +429,6 @@ end
 
 function initscores()
   cartdata("chasec_jouts")
-  -- clearscores()
   players = {forg, brid, shru, trut}
   if dget(19) == 0 then
     for i=1,10 do
@@ -416,7 +438,7 @@ function initscores()
 end
 
 function clearscores()
-  for i=0,63 do
+  for i=0,10 do
     dset(i, 0)
   end
 end
@@ -448,10 +470,21 @@ function highscores:update()
   if (btn(b.x) or btn(b.o)) playerselect:start()
 end
 
+-- game settings
+
+function savesettings()
+  dset(63, matchend)
+end
+
+function loadsettings()
+  matchend = dget(63)
+end
+
 -- system callbacks
 
 function _init()
   initscores()
+  loadsettings()
   gamestate = playerselect
 end
 
