@@ -1,4 +1,5 @@
 matchend = 10
+pointsmatch = true -- otherwise time
 highscore_idle = 120
 
 flags = {
@@ -14,20 +15,34 @@ medals = {
 -- menu items
 
 function initmenu()
-  local matchpoints = {5, 10, 20, 50}
-  menuitem(1, matchend .." point match", function(mask)
+  local matchtypemap = {
+    [true] =  {5,  10, 20, 50}, -- points
+    [false] = {1,  3,  5,  10}, -- minutes
+  }
+  local mtype = "minute"
+  if (pointsmatch) mtype = "point"
+  menuitem(1, matchend.." "..mtype.." match", function(mask)
     local l = mask & 1 > 0
     local r = mask & 2 > 0
-    local i = find(matchpoints, matchend) or 2
+    local x = mask & 16 > 0
+
+    local matchvals = matchtypemap[pointsmatch]
+    local i = find(matchvals, matchend) or 2
+    if x then
+      pointsmatch = not pointsmatch
+      matchvals = matchtypemap[pointsmatch]
+      matchend = matchvals[i]
+    end
+
     if (l) i -= 1
     if (r) i += 1
-    i = wrap(1, i, #matchpoints)
-    matchend = matchpoints[i]
+    i = wrap(1, i, #matchvals)
+    matchend = matchvals[i]
     savesettings()
     initmenu()
+    return true
   end)
 end
-initmenu()
 
 menuitem(2, "clear high scores", function(mask)
   if (mask & 0b00001) clearscores()
@@ -242,8 +257,15 @@ function game:draw()
   for i, o in pairs(self.objects) do
     o:draw()
   end
-  spr(78, 56, 0, 2, 1)
-  printc(matchend - self.score, 64, 1, 10)
+  spr(76, 48, 0, 4, 1)
+  local s
+  if (pointsmatch) then
+    s = matchend - self.score
+  else
+    local time = matchend * 60 - self.clock
+    s = flr(time / 60) .. ":" .. flr(time % 60)
+  end
+  printc(s, 64, 1, 10)
 end
 
 
@@ -473,11 +495,15 @@ end
 -- game settings
 
 function savesettings()
-  dset(63, matchend)
+  local mv = matchend
+  if (not pointsmatch) mv *= -1
+  dset(63, mv)
 end
 
 function loadsettings()
-  matchend = dget(63)
+  mv = dget(63)
+  pointsmatch = mv > 0
+  matchend = abs(mv)
 end
 
 -- system callbacks
@@ -485,6 +511,7 @@ end
 function _init()
   initscores()
   loadsettings()
+  initmenu()
   gamestate = playerselect
 end
 
