@@ -1,4 +1,5 @@
 matchend = 1
+highscore_idle = 120
 
 flags = {
   stop=0
@@ -30,9 +31,11 @@ playerselect = {
     coord(0,0),
   },
   palettes = {0,1,2,3},
+  idle = 0,
 }
 
 function playerselect:start()
+  self.idle = 0
   for p=1,4 do
     self.chosen[p] = coord(0,0)
   end
@@ -40,10 +43,13 @@ function playerselect:start()
 end
 
 function playerselect:update()
-  for player=1,4 do
-    chosen = self.chosen[player]
-    selected = self.selected[player]
+  self.idle += dt
+  if (self.idle > highscore_idle) return highscores:start()
+  if (btn() != 0) self.idle = 0
 
+  for player=1,4 do
+    local chosen = self.chosen[player]
+    local selected = self.selected[player]
 
     if btnp(b.o, player-1) then
       chosen.x, chosen.y = 0, 0
@@ -52,7 +58,7 @@ function playerselect:update()
 
     if btnp(b.x, player-1) then
       if chosen == selected and chosen != coord(0, 0) then
-        players = {}
+        local players = {}
         for p, pos in pairs(self.chosen) do
           if pos != coord(0,0) then
             players[p] = {
@@ -66,8 +72,8 @@ function playerselect:update()
         chosen.x, chosen.y = selected.x, selected.y
       end
     end
-    dx = dpad('x', player-1, true)
-    dy = dpad('y', player-1, true)
+    local dx = dpad('x', player-1, true)
+    local dy = dpad('y', player-1, true)
     if dx+dy != 0 then
       if (selected == coord(0, 0)) then
         -- join the game
@@ -103,16 +109,16 @@ function playerselect:draw()
   rectfill(0, 0, 127, 127, 0)
   print("choose your aminal", 28, 5, 8)
 
-  y = 30
+  local y = 30
   for r, row in pairs(self.options) do
-    x = 23
+    local x = 23
     for c, col in pairs(row) do
       rect(x, y, x+15, y+15, 6)
       rect(x+1, y+1, x+14, y+14, 6)
       rect(x+2, y+2, x+13, y+13, 7)
 
-      rc = coord(c, r)
-      drawn = 0
+      local rc = coord(c, r)
+      local drawn = 0
       for player=1,4 do
         selected = self.selected[player]
         chosen = self.chosen[player]
@@ -223,6 +229,7 @@ end
 victory = {}
 
 function victory:start(players, time)
+  self.idle = 0
   self.gametime = time
   self.players = players
   self.totalkills = 0
@@ -234,6 +241,7 @@ function victory:start(players, time)
   end)
 
   self.needs_initials = is_highscore(self:makescore(self.players[1]))
+  self.highscore = self.needs_initials
   self.initials = ""
   self.initial = "a"
   self.blink = 0
@@ -249,6 +257,8 @@ function victory:makescore(player)
 end
 
 function victory:update()
+  self.idle += dt
+  if (self.idle > highscore_idle) return highscores:start()
   if self.needs_initials then
     local winner = self.players[1]
     self.blink += dt
@@ -314,8 +324,8 @@ function victory:draw()
   end
 
   line(0, 116, 127, 116, 7)
+  if (self.highscore) print("player "..(self.players[1].p+1).." got a high score!", 12, 2, 10)
   if self.needs_initials then
-    print("player "..(self.players[1].p+1).." got a high score!", 12, 2, 10)
     getinitials = "enter your initials: " .. self.initials
     local i = self.initial
     if (i == '`') i = " end"
@@ -327,31 +337,34 @@ function victory:draw()
 end
 
 -- highscores screen
-aminals = invert{
+aminal_ids = {
   shru.name,
   forg.name,
   brid.name,
   trut.name,
   waps.name,
 }
+aminals = invert(aminal_ids)
 
-function n2b(initials)
+function name2bits(initials, aid)
   local a,b,c = ord(initials, 1, 3)
-  local num = 0
-  for i, v in pairs{a,b,c} do
-    num = num | v >> (i-1)*8
-  end
+  local num = aid | a << 8 | b >> 8 | c >> 16
   return num
 end
 
 byte = 255
-function b2n(bits)
+function bits2name(bits)
+  local aid = bits & byte
+  local initials = {
+    chr(bits >> 8 & byte),
+    chr(bits << 8 & byte),
+    chr(bits << 16 & byte),
+  }
   name = ""
-  for i=0,16,8 do
-    n = chr((bits << i) & byte)
-    if (n) name = name .. n
+  for i in all(initials) do
+    if (i != nil) name = name .. i
   end
-  return name
+  return name, aid
 end
 
 function is_highscore(score)
@@ -359,15 +372,13 @@ function is_highscore(score)
 end
 
 function save_score(initials, player, score)
-  local name = n2b(initials)
-  local aminal = aminals[player.name]
-  local namebits = name | (aminal >> 24)
+  local namebits = name2bits(initials, aminals[player.name])
 
   local saved = false
   for i=0,18,2 do
+    local onamebits = dget(i)
     local oscore = dget(i+1)
     if score > oscore then
-      onamebits = dget(i)
       dset(i, namebits)
       dset(i+1, score)
       score = oscore
@@ -382,12 +393,11 @@ function get_scores()
   local scores = {}
   for i=0,18,2 do
     local namebits = dget(i)
-    local initials = b2n(namebits)
-    local aid = (bits << 24) & byte
+    local initials, aid = bits2name(namebits)
     local score = dget(i+1)
     add(scores, {
       name=initials,
-      aminal=aminals[aid],
+      aminal=aminal_ids[aid],
       score=score,
     })
   end
@@ -396,11 +406,11 @@ end
 
 function initscores()
   cartdata("chasec_jouts")
-  clearscores()
-  players = {trut, shru, forg, brid}
-  if not dget(19) then
+  -- clearscores()
+  players = {forg, brid, shru, trut}
+  if dget(19) == 0 then
     for i=1,10 do
-      save_score("aaa", aminals[i%4+1], i)
+      save_score("aml", players[i%4+1], i * 1000)
     end
   end
 end
@@ -416,14 +426,26 @@ highscores = {
 }
 
 function highscores:start()
+  self.clock = 0
   gamestate = self
 end
 
 function highscores:draw()
+  cls()
+  color(11)
+  print("high scores", 42, 2)
+  for s, score in pairs(get_scores()) do
+    if (s > self.clock * 5) break
+    n = "#"
+    if (s < 10) n = " " .. n
+    print(n..s.." "..score.name .. "  " .. score.aminal .. "   " .. score.score, 4, 4 + 10*s)
+  end
+
 end
 
 function highscores:update()
   self.clock += dt
+  if (btn(b.x) or btn(b.o)) playerselect:start()
 end
 
 -- system callbacks

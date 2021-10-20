@@ -80,10 +80,6 @@ function easeoutback(t, pow)
   return 1-(2*(t-.5))^4
 end
 
-function clear(c)
-  print("\^c" .. (c or 0))
-end
-
 function insert(t, v, i)
   for j=#t,i,-1 do
     t[j+1] = t[j]
