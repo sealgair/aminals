@@ -1,6 +1,6 @@
 matchend = 10
 pointsmatch = true -- otherwise time
-highscore_idle = 120
+highscore_idle = 10
 
 flags = {
   stop=0
@@ -46,6 +46,7 @@ end
 
 menuitem(2, "clear high scores", function(mask)
   if (mask & 0b00001) clearscores()
+  initscores()
   return true
 end)
 
@@ -53,8 +54,9 @@ end)
 
 playerselect = {
   options = {
-    {shru, forg},
-    {brid, trut},
+    {shru, waps, forg},
+    {false, false, false},
+    {brid, false, trut},
   },
   chosen = {
     coord(0,0),
@@ -118,8 +120,11 @@ function playerselect:update()
         selected.x, selected.y = 1, 1
       elseif chosen == coord(0, 0) then
         -- hasn't decided
-        selected.x = wrap(1, selected.x+dx, 2)
-        selected.y = wrap(1, selected.y+dy, 2)
+        repeat
+          selected.x = wrap(1, selected.x+dx, 3)
+          selected.y = wrap(1, selected.y+dy, 3)
+          sel = self.options[selected.y][selected.x]
+        until sel and not sel.locked
       else
         -- choose color
         repeat
@@ -138,7 +143,7 @@ function playerselect:update()
 
   for row in all(self.options) do
     for col in all(row) do
-      col.sprite:advance()
+      if (col) col.sprite:advance()
     end
   end
 end
@@ -147,37 +152,39 @@ function playerselect:draw()
   cls(5)
   print("choose your aminal", 28, 5, 9)
 
-  local y = 30
+  local y = 25
   for r, row in pairs(self.options) do
-    local x = 23
+    local x = 25
     for c, col in pairs(row) do
-      rect(x, y, x+15, y+15, 6)
-      rect(x+1, y+1, x+14, y+14, 6)
-      rect(x+2, y+2, x+13, y+13, 7)
+      if col and not col.locked then
+        rect(x, y, x+15, y+15, 6)
+        rect(x+1, y+1, x+14, y+14, 6)
+        rect(x+2, y+2, x+13, y+13, 7)
 
-      local rc = coord(c, r)
-      local drawn = 0
-      for player=1,4 do
-        selected = self.selected[player]
-        chosen = self.chosen[player]
-        color(player_colors[player])
-        if rc == chosen then
-          drawn += 1
-          if (drawn == 1) line(x+2, y+1, x+13, y+1) -- top: p1
-          if (drawn < 3) line(x+2, y+14, x+13, y+14) -- bottom: p1 p2
-          if (drawn%2 == 1) line(x+1, y+2, x+1, y+13) -- left: p1 p3
-          if (drawn != 3) line(x+14, y+2, x+14, y+13) -- right: p1 p2 p4
+        local rc = coord(c, r)
+        local drawn = 0
+        for player=1,4 do
+          selected = self.selected[player]
+          chosen = self.chosen[player]
+          color(player_colors[player])
+          if rc == chosen then
+            drawn += 1
+            if (drawn == 1) line(x+2, y+1, x+13, y+1) -- top: p1
+            if (drawn < 3) line(x+2, y+14, x+13, y+14) -- bottom: p1 p2
+            if (drawn%2 == 1) line(x+1, y+2, x+1, y+13) -- left: p1 p3
+            if (drawn != 3) line(x+14, y+2, x+14, y+13) -- right: p1 p2 p4
+          end
+          if rc == selected then
+            print(player, x+(player-1)*4, y-6)
+          end
         end
-        if rc == selected then
-          print(player, x+(player-1)*4, y-6)
-        end
+        rectfill(x+3, y+3, x+12, y+12, 12)
+        col:drawsprite(x+4, y+4)
+        print(col.name, x, y+17, 15)
       end
-      rectfill(x+3, y+3, x+12, y+12, 12)
-      col:drawsprite(x+4, y+4)
-      print(col.name, x+1, y+17, 15)
-      x += 64
+      x += 30
     end
-    y += 50
+    y += 30
 
   end
 
@@ -271,7 +278,16 @@ end
 
 -- match end screen
 
-victory = {}
+victory = {
+  unlocktimer=0,
+}
+
+function victory:unlock(aminal)
+  aminal.locked = false
+  savesettings()
+  self.unlocked = aminal
+  self.unlocktimer = 5
+end
 
 function victory:start(players, time)
   self.idle = 0
@@ -307,13 +323,19 @@ end
 function victory:update()
   self.idle += dt
   if (self.idle > highscore_idle) return highscores:start()
-  if self.needs_initials then
+  if self.unlocktimer > 0 then
+    self.unlocktimer -= dt
+    if (self.unlocktimer <= 0) self.unlocked = nil
+  elseif self.needs_initials then
     local winner = self.players[1]
     self.blink += dt
     if (self.blink >= 1) self.blink = 0
     if btnp(b.x, winner.p) then
       if self.initial == "`" then
-        if (self.initials != "") save_score(self.initials, winner, self:makescore(winner))
+        if self.initials != "" then
+          place = save_score(self.initials, winner, self:makescore(winner))
+          if (place == 1) self:unlock(waps)
+        end
         self.needs_initials = false
       else
         self.initials = self.initials .. self.initial
@@ -382,6 +404,17 @@ function victory:draw()
   else
     print("❎ retry    🅾️ change aminals", 8, 120, 6)
   end
+
+  if self.unlocked then
+    rectfill(16,16,111,111,8)
+    rectfill(18,18,109,109,0)
+    color(10)
+    print('congratulations!!', 30, 20)
+    print('you have unlocked '..self.unlocked.name, 20, 28)
+    circfill(64,64,8,12)
+    self.unlocked:drawsprite(60,60)
+    -- todo: unlocked by string?
+  end
 end
 
 -- highscores screen
@@ -437,7 +470,7 @@ function save_score(initials, player, score)
       dset(i+1, score)
       score = oscore
       namebits = onamebits
-      saved = saved or i+1/2
+      saved = saved or i/2+1
     end
   end
   return saved
@@ -508,8 +541,10 @@ function getstats(aminal)
   return stats
 end
 
+cd = false
 function initscores()
-  cartdata("chasec_jouts")
+  if (not cd) cartdata("chasec_jouts")
+  cd = true
   players = {forg, brid, shru, trut}
   if dget(19) == 0 then
     for i=1,10 do
@@ -519,7 +554,7 @@ function initscores()
 end
 
 function clearscores()
-  for i=0,10 do
+  for i=0,60 do
     dset(i, 0)
   end
 end
@@ -573,15 +608,17 @@ function highscores:drawstats()
     return lalign(min(n, 9999), 5)
   end
   for a, aminal in pairs(aminals) do
-    if (a > self.clock * 3) break
-    if a % 2 == 0 then
-      color(12)
-    else
-      color(13)
+    if not aminal.locked then
+      if (a > self.clock * 3) break
+      if a % 2 == 0 then
+        color(12)
+      else
+        color(13)
+      end
+      local s = getstats(aminal.name)
+      aminal:drawsprite(2, 7+12*a)
+      print(num(s.kills) .. num(s.deaths) .. num(s.wins) .. num(s.losses) .. num(flr(s.time/60)), 18, 9+12*a)
     end
-    local s = getstats(aminal.name)
-    aminal:drawsprite(2, 7+12*a)
-    print(num(s.kills) .. num(s.deaths) .. num(s.wins) .. num(s.losses) .. num(flr(s.time/60)), 18, 9+12*a)
   end
 end
 
@@ -600,12 +637,25 @@ function savesettings()
   local mv = matchend
   if (not pointsmatch) mv *= -1
   dset(63, mv)
+
+  -- unlocked aminals
+  unlocked = 0
+  for a, aminal in pairs(aminals) do
+    if (not aminal.locked) unlocked = unlocked | 2^(a-1)
+  end
+  dset(62, unlocked)
 end
 
 function loadsettings()
   mv = dget(63)
   pointsmatch = mv > 0
   matchend = abs(mv)
+
+  -- unlocks
+  unlocked = dget(62)
+  for a, aminal in pairs(aminals) do
+    if (unlocked & 2^(a-1) > 0) aminal.locked = false
+  end
 end
 
 -- system callbacks

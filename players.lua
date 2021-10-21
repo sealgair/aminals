@@ -505,7 +505,8 @@ waps = prototype({
   },
   name='waps',
   accel=10, speed=1,
-  gravity=0
+  gravity=0,
+  locked=true,
 }, playerbase)
 
 function waps:die()
