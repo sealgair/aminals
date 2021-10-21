@@ -10,6 +10,31 @@ sprite = {
   blink = 1,
 }
 
+function makeopacity(percent, l)
+  l = l or 6
+  if percent < 0.5 then
+    return {1, 1+flr(l*(percent*2-1))}
+  else
+    return {1+flr(l*2*(.5-percent)), 1}
+  end
+end
+
+function makeopacity(percent, steps)
+  steps = steps or 6
+  margin = 1/(steps*2)
+  if percent < margin then
+    return {0, 1}
+  elseif percent < 0.5 then
+    percent *= 2 -- percent of lower half
+    return {1, ceil((1-percent)*steps)}
+  elseif percent > 1-margin then
+    return {1, 0}
+  else
+    percent = (percent * 2)-1 -- percent of upper half
+    return {ceil(percent*steps), 1}
+  end
+end
+
 function sprite:new(opts)
   -- if (not opts.animations) opts = {animations=opts}
   if opts.animations then

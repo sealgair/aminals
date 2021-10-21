@@ -56,7 +56,7 @@ playerselect = {
   options = {
     {shru, waps, forg},
     {false, false, false},
-    {brid, false, trut},
+    {brid, mant, trut},
   },
   chosen = {
     coord(0,0),
@@ -424,7 +424,7 @@ aminals = {
   brid,
   trut,
   waps,
-  -- {name='mant'},
+  mant,
   -- {name='spir'},
   -- {name='sulg'},
   -- {name='fung'},
