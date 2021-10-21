@@ -284,6 +284,9 @@ function victory:start(players, time)
   self.players = sort(self.players, function(a, b)
     return self:makescore(a) > self:makescore(b)
   end)
+  for place, player in pairs(self.players) do
+    savestats(player, time, place)
+  end
 
   self.needs_initials = is_highscore(self:makescore(self.players[1]))
   self.highscore = self.needs_initials
@@ -363,8 +366,8 @@ function victory:draw()
     circfill(xm, 24, 8, medals[p][2])
     circfill(xm, 24, 6, 12)
     player:drawsprite(xm-4, 20)
-    printc('kills: '..player.kills, xm, 38, 8)
-    printc('deaths: '..player.deaths, xm, 48, 2)
+    printc('ate: '..player.kills, xm, 38, 8)
+    printc('fed: '..player.deaths, xm, 48, 2)
     printc(self:makescore(player).." pts", xm, 58, 10)
   end
 
@@ -382,14 +385,20 @@ function victory:draw()
 end
 
 -- highscores screen
-aminal_ids = {
-  shru.name,
-  forg.name,
-  brid.name,
-  trut.name,
-  waps.name,
+aminals = {
+  shru,
+  forg,
+  brid,
+  trut,
+  waps,
+  -- {name='mant'},
+  -- {name='spir'},
+  -- {name='sulg'},
+  -- {name='fung'},
 }
-aminals = invert(aminal_ids)
+animal_names = tmap(aminals, function(a) return a.name end)
+animal_ids = invert(animal_names)
+-- todo: rename those arrays
 
 function name2bits(initials, aid)
   local a,b,c = ord(initials, 1, 3)
@@ -417,7 +426,7 @@ function is_highscore(score)
 end
 
 function save_score(initials, player, score)
-  local namebits = name2bits(initials, aminals[player.name])
+  local namebits = name2bits(initials, animal_ids[player.name])
 
   local saved = false
   for i=0,18,2 do
@@ -442,11 +451,61 @@ function get_scores()
     local score = dget(i+1)
     add(scores, {
       name=initials,
-      aminal=aminal_ids[aid],
+      aminal=animal_names[aid],
       score=score,
     })
   end
   return scores
+end
+
+function dinc(i, v)
+  dset(i, v + dget(i))
+end
+
+function savestats(player, time, place)
+  local id = animal_ids[player.name]
+  local idx = 20 + (id-1)*4
+
+  -- kills & deaths in first slot
+  local kd = player.kills | player.deaths >> 16
+  dinc(idx, kd)
+
+  -- total time in second
+  idx += 1
+  dinc(idx, time)
+
+  -- wins & losses in third
+  idx += 1
+  local v = 1
+  if (place > 1) v = 1 >> 16
+  dinc(idx, v)
+
+  -- todo: something else in fourth?
+end
+
+function getstats(aminal)
+  local id = animal_ids[aminal]
+  local idx = 20 + (id-1)*4
+  local stats = {name=aminal}
+
+  -- kills & deaths in first slot
+  local kd = dget(idx)
+  stats.kills = kd & 0xffff
+  stats.deaths = kd << 16
+
+  -- total time in second
+  idx += 1
+  stats.time = dget(idx)
+
+  -- wins & losses in third
+  idx += 1
+  wl = dget(idx)
+  stats.wins = wl & 0xffff
+  stats.losses = wl << 16
+
+  -- todo: something else in fourth?
+
+  return stats
 end
 
 function initscores()
@@ -466,7 +525,8 @@ function clearscores()
 end
 
 highscores = {
-  clock = 0
+  clock = 0,
+  show_scores = true,
 }
 
 function highscores:start()
@@ -475,20 +535,62 @@ function highscores:start()
 end
 
 function highscores:draw()
+  if self.show_scores then
+    self:drawscores()
+  else
+    self:drawstats()
+  end
+end
+
+function highscores:drawscores()
   cls()
   color(11)
   print("high scores", 42, 2)
+  line(0, 10, 127, 10)
   for s, score in pairs(get_scores()) do
+    if s  % 2 == 0 then
+      color(3)
+    else
+      color(11)
+    end
     if (s > self.clock * 5) break
     n = "#"
     if (s < 10) n = " " .. n
-    print(n..s.." "..score.name .. "  " .. score.aminal .. "   " .. score.score, 4, 4 + 10*s)
+    print(n..s.." "..score.name .. "  " .. score.aminal .. "  " .. score.score, 4, 4 + 10*s)
   end
+end
 
+function highscores:drawstats()
+  -- 128 pixels is 32 characters per line
+  cls(1)
+  color(7)
+  print("aminal stats", 40, 2)
+  line(0,17,127,17)
+  color(12)
+  print("ate  fed  won  lost mins", 18, 10)
+  rectfill(0,18,11,127)
+  function num(n)
+    return lalign(min(n, 9999), 5)
+  end
+  for a, aminal in pairs(aminals) do
+    if (a > self.clock * 3) break
+    if a % 2 == 0 then
+      color(12)
+    else
+      color(13)
+    end
+    local s = getstats(aminal.name)
+    aminal:drawsprite(2, 7+12*a)
+    print(num(s.kills) .. num(s.deaths) .. num(s.wins) .. num(s.losses) .. num(flr(s.time/60)), 18, 9+12*a)
+  end
 end
 
 function highscores:update()
   self.clock += dt
+  if self.clock > 30 then
+    self.clock = 0
+    self.show_scores = not self.show_scores
+  end
   if (btn(b.x) or btn(b.o)) playerselect:start()
 end
 

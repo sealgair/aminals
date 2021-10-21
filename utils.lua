@@ -116,3 +116,19 @@ function find(tbl, item)
     if (v == item) return k
   end
 end
+
+function lalign(s, n)
+  s = tostring(s)
+  while #s < n do
+    s = s .. " "
+  end
+  return s
+end
+
+function tmap(tbl, fn)
+  result = {}
+  for k, v in pairs(tbl) do
+    result[k] = fn(v)
+  end
+  return result
+end
