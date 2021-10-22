@@ -192,7 +192,7 @@ end
 
 function playerbase:poison(poisoner)
   self.poisoned = 5
-  self.poisoner = sender
+  self.poisoner = poisoner
 end
 
 function playerbase:cure(poisoner)
