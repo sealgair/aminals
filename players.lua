@@ -640,9 +640,10 @@ mant = prototype({
   name='mant',
   sprite=sprite:new{
     animations={
-      idle={43},
-      walk={43,44},
-      windup={45},
+      idle={42},
+      walk={42,43},
+      windup={44},
+      wound={45},
       attacking={46},
       hiding={45},
       dying=dieanim(47),
@@ -653,28 +654,29 @@ mant = prototype({
       {[11]=1, [15]=2, [10]=14},
     },
   },
+  windlen=0.5,
+  attkcool=0.75,
   hiding=false,
   windup=0,
   fade=0,
 }, playerbase)
 
 function mant:animstate()
-  if self.hiding then
-    return "hiding"
-  elseif self.windup > 0 then
-    return "windup"
-  else
-    return playerbase.animstate(self)
+  state = playerbase.animstate(self)
+  if state != "dying" and state != "attacking" then
+    if self.hiding then
+      return "hiding"
+    elseif self.windup > self.windlen then
+      return "wound"
+    elseif self.windup > 0 then
+      return "windup"
+    end
   end
+  return state
 end
 
 function mant:update()
   playerbase.update(self)
-  if self.vx != 0 or self.attacking > 0 then
-    self.hiding = false
-    self.fade = 0
-  end
-
   if self.hiding then
     if self.fade > 0 then
       self.fade -= dt
@@ -686,15 +688,30 @@ function mant:update()
 end
 
 function mant:attack()
-  if btnp(b.o, self.p) then
+  if not self.hiding and btnp(b.o, self.p) then
     self.hiding = true
     self.fade = 0.5
+  end
+  if self.cooldown <= 0 then
+    if btn(b.x, self.p) then
+      self.windup += dt
+      self.vx = 0
+    else
+      if self.windup > self.windlen then
+         self.attacking = self.attklen
+         self.cooldown = self.attacking + self.attkcool
+       end
+      self.windup = 0
+    end
+  end
+  if self.vx != 0 or self.attacking > 0 then
+    self.hiding = false
+    self.fade = 0
   end
 end
 
 --[[ TODO:
 spid
-mant
 sulg
 funj
 ]]

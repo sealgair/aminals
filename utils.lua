@@ -17,7 +17,7 @@ function debug(val, opts)
   y = opts.y or 0
   val = tostring(val)
   color(opts.bg or 5)
-  rectfill(x, y, 1+(#tostring(val)*4), y+7)
+  rectfill(x, y, (#tostring(val)*4), y+6)
   color(opts.fg or 6)
   print(val, x+1, y+1)
   cursor(bx, by, bc)
