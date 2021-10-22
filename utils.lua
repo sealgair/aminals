@@ -132,3 +132,14 @@ function tmap(tbl, fn)
   end
   return result
 end
+
+
+function coordtonum(x, y)
+  return flr(x) | flr(y) >> 16
+end
+
+function numtocoords(n)
+  x = n & 0xffffffff
+  y = n << 16
+  return x, y
+end

@@ -28,6 +28,7 @@ playerbase = {
   spawned=0,
   cooldown=0,
   poisoned=0,
+  slipping=0,
   deaths=0,
   kills=0,
 }
@@ -58,10 +59,9 @@ end
 function playerbase:move()
   -- gravity pulls
   self.vy += g * self.gravity
-
-  -- collide with map tiles
   self.x += self.vx
   sx = sgn(self.vx)
+  -- collide with map tiles
   while self:collides(self.x, self.y) do
     self.vx = 0
     self.x -= sx
@@ -91,13 +91,15 @@ end
 function playerbase:walk()
   dir = dpad('x', self.p)
   self.walking = dir != 0
+  slip = 1
+  if (self.slipping > 0) slip = .03
   if dir == 0 then
     -- speed down
-    self.vx = max(abs(self.vx) - self.accel*dt*2, 0) * sgn(self.vx)
+    self.vx = max(abs(self.vx) - self.accel*slip*dt*2, 0) * sgn(self.vx)
   else
     self.facing = dir
     -- speed up
-    self.vx = mid(-self.speed, self.vx + self.accel*dir*dt, self.speed)
+    self.vx = mid(-self.speed, self.vx + self.accel*slip*dir*dt, self.speed)
   end
 end
 
@@ -121,7 +123,7 @@ function playerbase:animstate()
 end
 
 function playerbase:states()
-  return {'attacking', 'dying', 'spawned', 'cooldown', 'poisoned'}
+  return {'attacking', 'dying', 'spawned', 'cooldown', 'poisoned', 'slipping'}
 end
 
 function playerbase:hitbox(w, h)
@@ -200,12 +202,18 @@ function playerbase:cure(poisoner)
   self.poisoner = nil
 end
 
+function playerbase:slip(sender)
+  self.slipping = 0.3
+end
+
 function playerbase:touched(signal, sender)
   if self:isvulnerable() then
     if signal == "attack" then
       self:die(sender)
     elseif signal == "poison" then
       self:poison(sender)
+    elseif signal == "slip" then
+      self:slip(sender)
     end
   end
 end
@@ -708,6 +716,56 @@ function mant:attack()
     self.hiding = false
     self.fade = 0
   end
+end
+
+sulg = prototype({
+  name='sulg',
+  sprite=sprite:new{
+    animations={
+      idle={24},
+      walk={24,25, speed=0.4},
+      attacking={26},
+      dying=dieanim(27),
+    },
+    palettes={
+      {[13]=3, [2]=1, [1]=0, [10]=15},
+      {[13]=10, [2]=4, [1]=0, [7]=10, [10]=9},
+      {[13]=4, [2]=8, [1]=2, [10]=14},
+    },
+  },
+  speed=.6,
+  slime={},
+  slimetime=10,
+}, playerbase)
+
+function sulg:update()
+  playerbase.update(self)
+  for k, v in pairs(self.slime) do
+    v -= dt
+    if (v <= 0) v = nil
+    self.slime[k] = v
+    if v then
+      x, y = numtocoords(k*8)
+      self.world:send_touch({x=x, y=y-2, w=8, h=2}, "slip", self)
+    end
+  end
+  if self.grounded then
+    x = self.x
+    y = self.y+8
+    if mfget(x, y, flags.stop) then
+      self.slime[coordtonum(x/8, y/8)] = self.slimetime
+    end
+  end
+end
+
+function sulg:draw()
+  playerbase.draw(self)
+  self.sprite:pal()
+  for k, v in pairs(self.slime) do
+    x, y = numtocoords(k*8)
+    spr(30, x, y)
+  end
+  pal()
 end
 
 --[[ TODO:

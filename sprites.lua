@@ -57,6 +57,15 @@ function sprite:canpal()
   return true
 end
 
+function sprite:pal(opts)
+  opts = opts or {}
+  if (self:canpal()) palette = opts.palette or self.palette
+  if palette then
+    if (type(palette) == "number") palette = self.palettes[palette]
+    pal(palette)
+  end
+end
+
 function sprite:draw(x,y, opts)
   opts = opts or {}
   self.blink += 1
@@ -64,11 +73,7 @@ function sprite:draw(x,y, opts)
   on, off = unpack(opacity)
   if (self.blink > on + off) self.blink = 1
   if self.blink <= on then
-    if (self:canpal()) palette = opts.palette or self.palette
-    if palette then
-      if (type(palette) == "number") palette = self.palettes[palette]
-      pal(palette)
-    end
+    self:pal(opts)
     spr(self:getcell(), x, y, opts.w or 1, opts.h or 1, opts.flipx, opts.flipy)
     pal()
   end

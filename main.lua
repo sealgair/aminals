@@ -1,6 +1,6 @@
 matchend = 10
 pointsmatch = true -- otherwise time
-highscore_idle = 10
+highscore_idle = 120
 
 flags = {
   stop=0
@@ -55,7 +55,7 @@ end)
 playerselect = {
   options = {
     {shru, waps, forg},
-    {false, false, false},
+    {sulg, false, false},
     {brid, mant, trut},
   },
   chosen = {
