@@ -426,8 +426,8 @@ aminals = {
   trut,
   waps,
   mant,
+  sulg,
   -- {name='spir'},
-  -- {name='sulg'},
   -- {name='fung'},
 }
 animal_names = tmap(aminals, function(a) return a.name end)
