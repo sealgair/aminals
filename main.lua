@@ -242,8 +242,10 @@ function game:update()
     self.score += o.deaths or 0
     o:update()
   end
-  if self.score >= matchend then
-    victory:start(self.objects, self.clock)
+  if pointsmatch then
+    if (self.score >= matchend) victory:start(self.objects, self.clock)
+  else
+    if (self.clock >= matchend*60) victory:start(self.objects, self.clock)
   end
 end
 
@@ -649,8 +651,8 @@ end
 
 function loadsettings()
   mv = dget(63)
-  pointsmatch = mv > 0
-  matchend = abs(mv)
+  pointsmatch = mv >= 0
+  matchend = abs(mv) or matchend
 
   -- unlocks
   unlocked = dget(62)
