@@ -88,8 +88,8 @@ function playerbase:control()
   end
 end
 
-function playerbase:walk()
-  dir = dpad('x', self.p)
+function playerbase:walk(dir)
+  dir = dir or dpad('x', self.p)
   self.walking = dir != 0
   slip = 1
   if (self.slipping > 0) slip = .03
@@ -162,9 +162,11 @@ function playerbase:update()
     end
   end
 
-  if self.attacking > 0 and self:hitbox() then
-    touches = self.world:send_touch(self:hitbox(), self:hitsignal(), self)
-    if (#touches > 0) self:attacked(touches)
+  if self.attacking > 0 then
+    for htibox in all(pack(self:hitbox())) do
+      touches = self.world:send_touch(htibox, self:hitsignal(), self)
+      if (#touches > 0) self:attacked(touches)
+    end
   end
 end
 
@@ -250,8 +252,9 @@ function playerbase:draw(x, y)
 
   -- uncomment to draw hitboxes
   -- if self.attacking > 0 then
-  --   hb = self:hitbox()
-  --   rect(hb.x, hb.y, hb.x+hb.w, hb.y+hb.h, 7)
+  --   for hb in all(pack(self:hitbox())) do
+  --     rect(hb.x, hb.y, hb.x+hb.w, hb.y+hb.h, 7)
+  --   end
   -- end
 end
 
@@ -733,9 +736,15 @@ sulg = prototype({
       {[13]=4, [2]=8, [1]=2, [10]=14},
     },
   },
+  vspike=28,
+  hspike=29,
+  accel=3,
   speed=.6,
   slime={},
   slimetime=10,
+  spikelen=0,
+  attklen=1.5,
+  atkspr=0,
 }, playerbase)
 
 function sulg:update()
@@ -753,12 +762,47 @@ function sulg:update()
     x = self.x
     y = self.y+8
     if mfget(x, y, flags.stop) then
-      self.slime[coordtonum(x/8, y/8)] = self.slimetime
+      self.slime[coordtonum((x)/8, y/8)] = self.slimetime
     end
+  end
+
+  time=32
+  if self.attacking > 0 then
+    self.spikelen = min(self.spikelen+time*dt, 8)
+  else
+    self.spikelen = max(self.spikelen-time*dt, 0)
   end
 end
 
+function sulg:attack()
+  playerbase.attack(self)
+  if self.attacking > 0 and not btn(b.x, self.p) then
+    self.attacking = 0
+    self.cooldown = self.attkcool
+  end
+end
+
+function sulg:walk()
+  if self.attacking > 0 then
+    self.vx = max(abs(self.vx) - .3*dt, 0) * sgn(self.vx)
+  else
+    playerbase.walk(self)
+  end
+end
+
+function sulg:hitbox()
+  vhb = {x=self.x+2, y=self.y+4-self.spikelen, w=4,h=self.spikelen}
+  hhb = {x=self.x+2-self.spikelen, y=self.y+2, w=self.spikelen*2+2,h=4}
+  return vhb, hhb
+end
+
 function sulg:draw()
+  if self.spikelen > 0 then
+    l = (self.spikelen)/8
+    spr(self.vspike, self.x, self.y+4-self.spikelen, 1, l, self.facing == 1)
+    spr(self.hspike, self.x+2-self.spikelen, self.y, l, 1)
+    spr(self.hspike, self.x-2+self.spikelen, self.y, l, 1, true)
+  end
   playerbase.draw(self)
   self.sprite:pal()
   for k, v in pairs(self.slime) do
