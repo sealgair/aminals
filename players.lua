@@ -759,7 +759,7 @@ function sulg:update()
     end
   end
   if self.grounded then
-    x = self.x
+    x = self.x+4
     y = self.y+8
     if mfget(x, y, flags.stop) then
       self.slime[coordtonum((x)/8, y/8)] = self.slimetime
@@ -797,19 +797,19 @@ function sulg:hitbox()
 end
 
 function sulg:draw()
+  self.sprite:pal()
   if self.spikelen > 0 then
     l = (self.spikelen)/8
     spr(self.vspike, self.x, self.y+4-self.spikelen, 1, l, self.facing == 1)
     spr(self.hspike, self.x+2-self.spikelen, self.y, l, 1)
     spr(self.hspike, self.x-2+self.spikelen, self.y, l, 1, true)
   end
-  playerbase.draw(self)
-  self.sprite:pal()
   for k, v in pairs(self.slime) do
     x, y = numtocoords(k*8)
     spr(30, x, y)
   end
   pal()
+  playerbase.draw(self)
 end
 
 --[[ TODO:
