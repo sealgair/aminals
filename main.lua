@@ -301,6 +301,7 @@ function victory:start(players, time)
     return self:makescore(a) > self:makescore(b)
   end)
   for place, player in pairs(self.players) do
+    player.sprite.opacity = {1,0}
     savestats(player, time, place)
   end
 

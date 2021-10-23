@@ -688,6 +688,10 @@ end
 
 function mant:update()
   playerbase.update(self)
+  if self.dying > 0 or self.vx != 0 or self.attacking > 0 then
+    self.hiding = false
+    self.fade = 0
+  end
   if self.hiding then
     if self.fade > 0 then
       self.fade -= dt
@@ -714,10 +718,6 @@ function mant:attack()
        end
       self.windup = 0
     end
-  end
-  if self.vx != 0 or self.attacking > 0 then
-    self.hiding = false
-    self.fade = 0
   end
 end
 
