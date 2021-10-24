@@ -297,9 +297,16 @@ function shru:states()
   return states
 end
 
+function playerbase:statecomplete(state)
+  if state == 'dashing' then
+    self.facing = -self.facing
+  end
+end
+
 function shru:walk()
   playerbase.walk(self)
   if btnp(b.o, self.p) and self.dashcool <= 0 then
+    self.vy -= 1
     self.dashing = 0.2
     self.dashcool = 1
   end
