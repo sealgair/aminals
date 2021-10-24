@@ -92,12 +92,26 @@ function playerselect:update()
     local selected = self.selected[player]
 
     if btnp(b.o, player-1) then
-      chosen.x, chosen.y = 0, 0
+      if chosen.x != 0 then
+        chosen.x, chosen.y = 0, 0
+      else
+        selected.x, selected.y = 0, 0
+      end
       self.palettes[player] = player-1
     end
 
     if btnp(b.x, player-1) then
-      if chosen == selected and chosen != coord(0, 0) then
+      chosencount = 0
+      for p, c in pairs(self.chosen) do
+        if (c.x != 0) chosencount += 1
+      end
+      selcount = 0
+      for p, s in pairs(self.selected) do
+        if (s.x != 0) selcount += 1
+      end
+      -- require at least two players to start
+      -- don't let it start if someone hasn't chosen
+      if chosen.x != 0 and chosencount > 1 and chosencount == selcount then
         local players = {}
         for p, pos in pairs(self.chosen) do
           if pos != coord(0,0) then
