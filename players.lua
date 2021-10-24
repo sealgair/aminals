@@ -741,7 +741,7 @@ sulg = prototype({
   accel=3,
   speed=.6,
   slime={},
-  slimetime=10,
+  slimetime=8,
   spikelen=0,
   attklen=1.5,
   atkspr=0,
@@ -806,7 +806,9 @@ function sulg:draw()
   end
   for k, v in pairs(self.slime) do
     x, y = numtocoords(k*8)
-    spr(30, x, y)
+    s = 30
+    if (v < self.slimetime/3) s = 31
+    spr(s, x, y)
   end
   pal()
   playerbase.draw(self)
