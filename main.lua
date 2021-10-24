@@ -116,9 +116,11 @@ function playerselect:update()
     local dy = dpad('y', player-1, true)
     if dx+dy != 0 then
       if (selected == coord(0, 0)) then
-        -- join the game
-        selected.x, selected.y = 1, 1
-      elseif chosen == coord(0, 0) then
+        -- just joining, turn 0 to 1, -1 to 0 (so it wraps)
+        dx = min(dx+1, 1)
+        dy = min(dy+1, 1)
+      end
+      if chosen == coord(0, 0) then
         -- hasn't decided
         repeat
           selected.x = wrap(1, selected.x+dx, 3)
