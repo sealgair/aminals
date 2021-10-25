@@ -43,10 +43,12 @@ function playerbase:new(world, p, x, y, palette)
   }, self)
 end
 
-function playerbase:collides(x, y)
-  for x=x, x+self.w-1 do
-    for y=y, y+self.h-1 do
-      if (mfget(wrap(0, x, 127), wrap(0, y, 127), flags.stop)) return true
+function playerbase:collides(x, y, w, h)
+  w = w or self.w
+  h = h or self.h
+  for x=x, x+w-1 do
+    for y=y, y+h-1 do
+      if (mfget(wrap(0, x, 127), wrap(0, y, 127), flags.stop)) return x,y
     end
   end
   return false
@@ -61,6 +63,7 @@ function playerbase:move()
   self.vy += g * self.gravity
   self.x += self.vx
   sx = sgn(self.vx)
+
   -- collide with map tiles
   while self:collides(self.x, self.y) do
     self.vx = 0
@@ -821,8 +824,83 @@ function sulg:draw()
   playerbase.draw(self)
 end
 
+spir = prototype({
+  name='spir',
+  sprite=sprite:new{
+    bg=12,
+    animations={
+      idle={55},
+      walk={55,56},
+      wall_idle={39},
+      wall_walk={39,40},
+      dying=dieanim(22),
+    },
+    palettes={
+      {[0]=4, [2]=14, [8]=9},
+      {[0]=6, [2]=5, [8]=10},
+      {[0]=1, [2]=13, [8]=11},
+    },
+  },
+  vfacing=-1,
+  gravity=0,
+  wall=0,
+}, playerbase)
+
+function spir:walk()
+  local w = self:collides(self.x-1, self.y, self.w+2)
+  if w then
+    self.wall = sgn(w-self.x)
+  else
+    self.wall = 0
+  end
+
+  self.roofed = self:collides(self.x, self.y-1)
+
+  local diry = dpad('y', self.p)
+  local dirx = dpad('x', self.p)
+
+  if self.wall != 0 then
+    if (diry == 0 and not self.roofed) diry = dirx * -self.wall
+    if not self.grounded and not self.roofed then
+      dirx = 0
+    end
+  else
+    diry = 0
+  end
+
+  playerbase.walk(self, dirx)
+  self.walking = diry + dirx != 0
+
+  if diry == 0 then
+    -- speed down
+    self.vy = max(abs(self.vy) - self.accel*dt*2, 0) * sgn(self.vy)
+  else
+    self.vfacing = diry
+    -- speed up
+    self.vy = mid(-self.speed, self.vy + self.accel*diry*dt, self.speed)
+  end
+end
+
+function spir:animstate()
+  local state = playerbase.animstate(self)
+  if self.wall != 0 then
+    if (state != "dying") state = "wall_" .. state
+  end
+  return state
+end
+
+function spir:drawsprite(x, y, opts)
+  opts = opts or {}
+  if self.wall != 0 then
+    opts.flipx = self.wall > 0
+    opts.flipy = self.vfacing > 0
+  elseif self.roofed then
+    opts.flipy = true
+  end
+  playerbase.drawsprite(self, x, y, opts)
+  -- debug(self.y)
+end
+
 --[[ TODO:
-spid
-sulg
-funj
+fung
 ]]

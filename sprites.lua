@@ -64,6 +64,10 @@ function sprite:pal(opts)
     if (type(palette) == "number") palette = self.palettes[palette]
     pal(palette)
   end
+  if self.bg then
+    palt(0, false)
+    palt(self.bg, true)
+  end
 end
 
 function sprite:draw(x,y, opts)
@@ -76,6 +80,7 @@ function sprite:draw(x,y, opts)
     self:pal(opts)
     spr(self:getcell(), x, y, opts.w or 1, opts.h or 1, opts.flipx, opts.flipy)
     pal()
+    palt()
   end
 end
 

@@ -55,7 +55,7 @@ end)
 playerselect = {
   options = {
     {shru, waps, forg},
-    {sulg, false, false},
+    {sulg, false, spir},
     {brid, mant, trut},
   },
   chosen = {
@@ -445,7 +445,7 @@ aminals = {
   waps,
   mant,
   sulg,
-  -- {name='spir'},
+  spir,
   -- {name='fung'},
 }
 animal_names = tmap(aminals, function(a) return a.name end)
