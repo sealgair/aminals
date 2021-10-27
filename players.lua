@@ -844,6 +844,7 @@ spir = prototype({
   vfacing=-1,
   gravity=0,
   wall=0,
+  flipx=false,
 }, playerbase)
 
 function spir:walk()
@@ -856,8 +857,21 @@ function spir:walk()
 
   self.roofed = self:collides(self.x, self.y-1)
 
+  -- horizontal corners
+  if self.wall == 0 then
+    if not self:collides(self.x, self.y-1, self.w, self.h+2) then
+      -- have left the ground/ceiling
+      self.wall = -self.facing
+      self.flipx = self.vfacing < 0
+      self.vx = 0
+    else
+      self.flipx = false
+    end
+  end
+
   local diry = dpad('y', self.p)
   local dirx = dpad('x', self.p)
+  if (self.flipx) dirx = -dirx
 
   if self.wall != 0 then
     if (diry == 0 and not self.roofed) diry = dirx * -self.wall
@@ -874,6 +888,8 @@ function spir:walk()
   if diry == 0 then
     -- speed down
     self.vy = max(abs(self.vy) - self.accel*dt*2, 0) * sgn(self.vy)
+    if (self.grounded) self.vfacing = 1
+    if (self.roofed) self.vfacing = -1
   else
     self.vfacing = diry
     -- speed up
@@ -898,7 +914,7 @@ function spir:drawsprite(x, y, opts)
     opts.flipy = true
   end
   playerbase.drawsprite(self, x, y, opts)
-  -- debug(self.y)
+  -- debug(self.wall)
 end
 
 --[[ TODO:
