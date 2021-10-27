@@ -857,16 +857,31 @@ function spir:walk()
 
   self.roofed = self:collides(self.x, self.y-1)
 
-  -- horizontal corners
-  if self.wall == 0 then
+  if self.grounded or self.roofed or self.wall != 0 then
+    self.cornering = nil
+  end
+
+  -- corners
+  if self.cornering == nil and self.wall == 0 then
     if not self:collides(self.x, self.y-1, self.w, self.h+2) then
-      -- have left the ground/ceiling
-      self.wall = -self.facing
-      self.flipx = self.vfacing < 0
-      self.vx = 0
+      if self.vx != 0 then
+        self.cornering = 'x'
+        self.flipx = self.vfacing < 0
+        self.vx = 0
+      else
+        self.cornering = 'y'
+        self.flipx = false
+        self.vy = 0
+      end
     else
       self.flipx = false
     end
+  end
+  if self.cornering == 'x' then
+    self.wall = -self.facing
+  end
+  if self.cornering == 'y' then
+    self.wall = 0
   end
 
   local diry = dpad('y', self.p)
