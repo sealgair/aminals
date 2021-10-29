@@ -73,12 +73,14 @@ end
 function sprite:draw(x,y, opts)
   opts = opts or {}
   self.blink += 1
-  opacity = opts.opacity or self.opacity
-  on, off = unpack(opacity)
+  local opacity = opts.opacity or self.opacity
+  local on, off = unpack(opacity)
+  local ox = opts.offx or 0
+  local oy = opts.offy or 0
   if (self.blink > on + off) self.blink = 1
   if self.blink <= on then
     self:pal(opts)
-    spr(self:getcell(), x, y, opts.w or 1, opts.h or 1, opts.flipx, opts.flipy)
+    spr(self:getcell(), x + ox, y + oy, opts.w or 1, opts.h or 1, opts.flipx, opts.flipy)
     pal()
     palt()
   end

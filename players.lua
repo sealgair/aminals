@@ -92,9 +92,9 @@ function playerbase:control()
 end
 
 function playerbase:walk(dir)
-  dir = dir or dpad('x', self.p)
+  local dir = dir or dpad('x', self.p)
   self.walking = dir != 0
-  slip = 1
+  local slip = 1
   if (self.slipping > 0) slip = .03
   if dir == 0 then
     -- speed down
@@ -831,8 +831,10 @@ spir = prototype({
     animations={
       idle={55},
       walk={55,56},
+      edge={57},
       wall_idle={39},
       wall_walk={39,40},
+      wall_edge={41},
       dying=dieanim(22),
     },
     palettes={
@@ -847,45 +849,46 @@ spir = prototype({
   flipx=false,
 }, playerbase)
 
+function spir:edgecheck()
+  local x, y = self.x, self.y
+  if (self.facing < 0) x -= 1
+  if (self.facing > 0) x += 6
+  if (self.vfacing < 0) y -= 1
+  if (self.vfacing > 0) y += 6
+  return {x, y, 3, 3}
+end
+
 function spir:walk()
-  local w = self:collides(self.x-1, self.y, self.w+2)
+
+  local diry = dpad('y', self.p)
+  local dirx = dpad('x', self.p)
+
+  if self.edge then
+    local cx, cy, cw = unpack(self.edge)
+    -- if diry == 0 and cx != dirx then
+    --   diry = cy
+    -- end
+    if (dirx != cx) dirx = 0
+    if (diry != cy) diry = 0
+    if (diry+dirx != 0) then
+      self.x += dirx*3
+      self.y += diry*3
+      self.edge = nil
+    else
+      return
+    end
+  end
+
+  local w = self:collides(self.x-1, self.y, self.w+2, self.h)
   if w then
     self.wall = sgn(w-self.x)
+    self.facing = self.wall
   else
     self.wall = 0
   end
 
   self.roofed = self:collides(self.x, self.y-1)
 
-  if self.grounded or self.roofed or self.wall != 0 then
-    self.cornering = nil
-  end
-
-  -- corners
-  if self.cornering == nil and self.wall == 0 then
-    if not self:collides(self.x, self.y-1, self.w, self.h+2) then
-      if self.vx != 0 then
-        self.cornering = 'x'
-        self.flipx = self.vfacing < 0
-        self.vx = 0
-      else
-        self.cornering = 'y'
-        self.flipx = false
-        self.vy = 0
-      end
-    else
-      self.flipx = false
-    end
-  end
-  if self.cornering == 'x' then
-    self.wall = -self.facing
-  end
-  if self.cornering == 'y' then
-    self.wall = 0
-  end
-
-  local diry = dpad('y', self.p)
-  local dirx = dpad('x', self.p)
   if (self.flipx) dirx = -dirx
 
   if self.wall != 0 then
@@ -910,12 +913,34 @@ function spir:walk()
     -- speed up
     self.vy = mid(-self.speed, self.vy + self.accel*diry*dt, self.speed)
   end
+
+  -- check for edge
+  if dirx+diry != 0 then
+    local edge = self:edgecheck()
+    if not self:collides(unpack(edge)) then
+      -- snap to grid
+      local x,y = flr(self.x/8), flr(self.y/8)
+      if self.wall == 0 then
+        self.edge = {-self.facing, self.vfacing, self.wall}
+        if (self.facing > 0) x += 1
+      else
+        self.edge = {self.facing, -self.vfacing, self.wall}
+        if (self.vfacing > 0) y += 1
+        self.vfacing *= -1
+      end
+      self.x, self.y = x*8, y*8
+      self.vx = 0
+      self.vy = 0
+    end
+  end
 end
 
 function spir:animstate()
   local state = playerbase.animstate(self)
+  if (state == "dying") return state
+  if (self.edge) state = "edge"
   if self.wall != 0 then
-    if (state != "dying") state = "wall_" .. state
+    state = "wall_" .. state
   end
   return state
 end
@@ -928,8 +953,16 @@ function spir:drawsprite(x, y, opts)
   elseif self.roofed then
     opts.flipy = true
   end
+  if self.edge then
+    if self.wall == 0 then
+      opts.offx = -3 * self.facing
+      opts.offy = 3 * self.vfacing
+    else
+      opts.offx = 3 * self.facing
+      opts.offy = 3 * self.vfacing
+    end
+  end
   playerbase.drawsprite(self, x, y, opts)
-  -- debug(self.wall)
 end
 
 --[[ TODO:
