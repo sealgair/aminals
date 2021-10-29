@@ -21,7 +21,7 @@ end
 
 function makeopacity(percent, steps)
   steps = steps or 6
-  margin = 1/(steps*2)
+  local margin = 1/(steps*2)
   if percent < margin then
     return {0, 1}
   elseif percent < 0.5 then
@@ -35,6 +35,20 @@ function makeopacity(percent, steps)
   end
 end
 
+function loadpalette(s)
+  local x = s%16*8
+  local y = flr(s/16)*8
+  local res = {}
+  for p=1,3 do
+    local plt = {}
+    for c=0,7 do
+      plt[sget(x,y+c)] = sget(x+p, y+c)
+    end
+    add(res, plt)
+  end
+  return res
+end
+
 function sprite:new(opts)
   -- if (not opts.animations) opts = {animations=opts}
   if opts.animations then
@@ -42,6 +56,7 @@ function sprite:new(opts)
       if (cells.speed == nil) cells.speed = #cells * .15
     end
   end
+  if (opts.palettespr) opts.palettes = loadpalette(opts.palettespr)
   return prototype(opts, self)
 end
 

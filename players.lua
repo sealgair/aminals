@@ -271,11 +271,7 @@ shru = prototype({
         dash={21},
         dying=dieanim(22),
       },
-      palettes={
-        {[4]=5, [15]=6, [1]=11},
-        {[4]=1, [15]=13, [1]=9, [14]=4},
-        {[4]=7, [15]=7, [1]=8},
-      },
+      palettespr=127,
   },
   accel=8, speed=2.5,
   dashing=0, dashcool=0,
@@ -325,11 +321,7 @@ forg = prototype({
       lick={34},
       dying=dieanim(35),
     },
-    palettes={
-      {[11]=8, [3]=2, [10]=11},
-      {[11]=10, [3]=9, [10]=14},
-      {[11]=2, [3]=1, [10]=9},
-    }
+    palettespr=126
   },
   accel=8, speed=1.8,
   jump=0,
@@ -397,10 +389,10 @@ function forg:draw()
     ory = sin(self.orientation)
 
     x, y = self:tonguepos(8)
-    circ(x, y, 0, 0)
+    pset(x, y, 0)
     bm = 4
     if self.buzz > bm/2 then
-      circ(x+1, y-1, 0, 7)
+      pset(x+1, y-1, 7)
     end
     self.buzz +=1
     if (self.buzz > bm) self.buzz = 0
@@ -425,11 +417,7 @@ brid = prototype({
       peck={53},
       dying=dieanim(54),
     },
-    palettes={
-      {[13]=3, [2]=11, [15]=7, [12]=1, [9]=10},
-      {[13]=9, [2]=15, [15]=10, [12]=10, [9]=15},
-      {[13]=7, [2]=6, [15]=6, [12]=13, [9]=5},
-    }
+    palettespr=125
   },
   speed=1.75,
   walkspeed=.75,
@@ -512,11 +500,7 @@ waps = prototype({
       attacking={62},
       dying=dieanim(63),
     },
-    palettes={
-      {[10]=9, [4]=0, [9]=5, [8]=4, [6]=7},
-      {[10]=11, [4]=2, [9]=4, [8]=3, [6]=9},
-      {[10]=13, [4]=1, [9]=6, [8]=10, [6]=6},
-    }
+    palettespr=123,
   },
   name='waps',
   accel=10, speed=1,
@@ -565,11 +549,7 @@ trut = prototype({
       defending={3,4, once=true},
       dying=dieanim(7),
     },
-    palettes={
-      {[3]=4, [5]=2, [11]=15, [9]=10},
-      {[3]=9, [5]=4, [11]=10, [9]=11},
-      {[3]=0, [5]=10, [11]=7, [9]=8},
-    },
+    palettespr=124,
   },
   headsprite=sprite:new{
     animations={
@@ -669,11 +649,7 @@ mant = prototype({
       hiding={45},
       dying=dieanim(47),
     },
-    palettes={
-      {[11]=4, [15]=9, [10]=7},
-      {[11]=14, [15]=7, [10]=8},
-      {[11]=1, [15]=2, [10]=14},
-    },
+    palettespr=122,
   },
   windlen=0.5,
   attkcool=0.75,
@@ -740,11 +716,7 @@ sulg = prototype({
       attacking={26},
       dying=dieanim(27),
     },
-    palettes={
-      {[13]=3, [2]=1, [1]=0, [10]=15},
-      {[13]=10, [2]=4, [1]=0, [7]=10, [10]=9},
-      {[13]=4, [2]=8, [1]=2, [10]=14},
-    },
+    palettespr=121,
   },
   vspike=28,
   hspike=29,
@@ -839,11 +811,7 @@ spir = prototype({
       wall_edge={41},
       dying=dieanim(22),
     },
-    palettes={
-      {[0]=4, [2]=14, [8]=9},
-      {[0]=6, [2]=5, [8]=10},
-      {[0]=1, [2]=13, [8]=11},
-    },
+    palettespr=120,
   },
   vfacing=-1,
   gravity=0,
@@ -867,9 +835,6 @@ function spir:walk()
 
   if self.edge then
     local cx, cy, cw = unpack(self.edge)
-    -- if diry == 0 and cx != dirx then
-    --   diry = cy
-    -- end
     if (dirx != cx) dirx = 0
     if (diry != cy) diry = 0
     if (diry+dirx != 0) then
@@ -961,12 +926,10 @@ function spir:drawsprite(x, y, opts)
     opts.flipy = true
   end
   if self.edge then
+    opts.offx = 3 * self.facing
+    opts.offy = 3 * self.vfacing
     if self.wall == 0 then
-      opts.offx = -3 * self.facing
-      opts.offy = 3 * self.vfacing
-    else
-      opts.offx = 3 * self.facing
-      opts.offy = 3 * self.vfacing
+      opts.offx *= -1
     end
   end
   playerbase.drawsprite(self, x, y, opts)
