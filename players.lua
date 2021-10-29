@@ -831,6 +831,8 @@ spir = prototype({
     animations={
       idle={55},
       walk={55,56},
+      corner={38},
+      rev_corner={37},
       edge={57},
       wall_idle={39},
       wall_walk={39,40},
@@ -941,6 +943,11 @@ function spir:animstate()
   if (self.edge) state = "edge"
   if self.wall != 0 then
     state = "wall_" .. state
+    if (self.grounded or self.roofed) then
+      state = "corner"
+      -- todo: track direction we came from?
+      if (self.vfacing == self.facing) state = "rev_corner"
+    end
   end
   return state
 end
