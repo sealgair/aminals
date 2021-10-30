@@ -10,19 +10,6 @@ function printc(str, x, y, c)
   print(str, x-h, y, c)
 end
 
-function debug(val, opts)
-  bx, by, bc = cursor()
-  opts = opts or {}
-  x = opts.x or 0
-  y = opts.y or 0
-  val = tostring(val)
-  color(opts.bg or 5)
-  rectfill(x, y, (#tostring(val)*4), y+6)
-  color(opts.fg or 6)
-  print(val, x+1, y+1)
-  cursor(bx, by, bc)
-end
-
 function wrap(min, v, max)
   if (v < min) v = max-(min-v)+1
   if (v > max) v = min+(v-max)-1
@@ -142,4 +129,26 @@ function numtocoords(n)
   x = n & 0xffffffff
   y = n << 16
   return x, y
+end
+
+function splitstr(str, delim)
+  split = {}
+  token = ''
+  delims = {}
+
+  for i=1,#delim do
+    delims[sub(delim, i, i)] = true
+  end
+
+  str = str..delim
+  for i=1,#str do
+    s = sub(str, i,i)
+    if delims[s] then
+      if (token != '') add(split, token)
+      token = ''
+    else
+      token = token .. s
+    end
+  end
+  return split
 end

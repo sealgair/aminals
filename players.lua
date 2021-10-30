@@ -1,12 +1,5 @@
 dielen = 1.5
 sqrt2 = sqrt(2)
-function dieanim(s)
-  return {
-    s, s, 14, 15, 0, 0,
-    speed=dielen, once=true,
-    nopal={[14]=true,[15]=true}
-  }
-end
 
 poison = sprite:new{
   animations={idle={13}},
@@ -266,14 +259,14 @@ end
 shru = prototype({
   name='shru',
   sprite=sprite:new{
-      animations={
-        idle={16,16,16,16,16,16,18, speed=1.5},
-        walk={16,17},
-        attacking={19,20, speed=0.2},
-        dash={21},
-        dying=dieanim(22),
-      },
-      palettespr=127,
+    animationstr=[[
+    idle=16,16,16,16,16,16,18,speed:1.5
+    walk=16,17
+    attacking=19,20,speed:0.2
+    dash=21
+    dying=22
+    ]],
+    palettespr=127,
   },
   accel=8, speed=2.5,
   dashing=0, dashcool=0,
@@ -317,12 +310,12 @@ end
 forg = prototype({
   name='forg',
   sprite=sprite:new{
-    animations={
-      idle={32},
-      jump={33},
-      lick={34},
-      dying=dieanim(35),
-    },
+    animationstr=[[
+    idle=32
+    jump=33
+    lick=34
+    dying=35
+    ]],
     palettespr=126
   },
   accel=8, speed=1.8,
@@ -410,15 +403,15 @@ end
 brid = prototype({
   name='brid',
   sprite=sprite:new{
-    animations={
-      idle={48},
-      walk={48,49},
-      flap={51},
-      glide={50},
-      dive={52},
-      peck={53},
-      dying=dieanim(54),
-    },
+    animationstr=[[
+      idle=48
+      walk=48,49
+      flap=51
+      glide=50
+      dive=52
+      peck=53
+      dying=54
+    ]],
     palettespr=125
   },
   speed=1.75,
@@ -497,11 +490,11 @@ end
 
 waps = prototype({
   sprite=sprite:new{
-    animations={
-      idle={60, 61, speed=1/18},
-      attacking={62},
-      dying=dieanim(63),
-    },
+    animationstr=[[
+      idle=60,61,speed:0.05555
+      attacking=62
+      dying=63
+    ]],
     palettespr=123,
   },
   name='waps',
@@ -544,20 +537,20 @@ end
 trut = prototype({
   name='trut',
   sprite=sprite:new{
-    animations={
-      idle={1},
-      walk={1,2},
-      attacking={1},
-      defending={3,4, once=true},
-      dying=dieanim(7),
-    },
+    animationstr=[[
+      idle=1
+      walk=1,2
+      attacking=1
+      defending=3,4,once:1
+      dying=7
+    ]],
     palettespr=124,
   },
   headsprite=sprite:new{
-    animations={
-      idle={5},
-      attacking={6},
-    },
+    animationstr=[[
+      idle=5
+      attacking=6
+    ]],
   },
   necklen=0,
   attklen=1.5,
@@ -642,15 +635,15 @@ end
 mant = prototype({
   name='mant',
   sprite=sprite:new{
-    animations={
-      idle={42},
-      walk={42,43},
-      windup={44},
-      wound={45},
-      attacking={46},
-      hiding={45},
-      dying=dieanim(47),
-    },
+    animationstr=[[
+      idle=42
+      walk=42,43
+      windup=44
+      wound=45
+      attacking=46
+      hiding=45
+      dying=47
+    ]],
     palettespr=122,
   },
   windlen=0.5,
@@ -712,12 +705,12 @@ end
 sulg = prototype({
   name='sulg',
   sprite=sprite:new{
-    animations={
-      idle={24},
-      walk={24,25, speed=0.4},
-      attacking={26},
-      dying=dieanim(27),
-    },
+    animationstr=[[
+      idle=24
+      walk=24,25,speed:0.4
+      attacking=26
+      dying=27
+    ]],
     palettespr=121,
   },
   vspike=28,
@@ -802,17 +795,17 @@ spir = prototype({
   name='spir',
   sprite=sprite:new{
     bg=12,
-    animations={
-      idle={55},
-      walk={55,56},
-      corner={38},
-      rev_corner={37},
-      edge={57},
-      wall_idle={39},
-      wall_walk={39,40},
-      wall_edge={41},
-      dying=dieanim(22),
-    },
+    animationstr=[[
+      idle=55
+      walk=55,56
+      corner=38
+      rev_corner=37
+      edge=57
+      wall_idle=39
+      wall_walk=39,40
+      wall_edge=41
+      dying=22
+    ]],
     palettespr=120,
   },
   jumpspeed=1.5,

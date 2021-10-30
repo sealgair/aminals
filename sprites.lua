@@ -10,15 +10,6 @@ sprite = {
   blink = 1,
 }
 
-function makeopacity(percent, l)
-  l = l or 6
-  if percent < 0.5 then
-    return {1, 1+flr(l*(percent*2-1))}
-  else
-    return {1+flr(l*2*(.5-percent)), 1}
-  end
-end
-
 function makeopacity(percent, steps)
   steps = steps or 6
   local margin = 1/(steps*2)
@@ -33,6 +24,34 @@ function makeopacity(percent, steps)
     percent = (percent * 2)-1 -- percent of upper half
     return {ceil(percent*steps), 1}
   end
+end
+
+function dieanim(s)
+  return {
+    s, s, 14, 15, 0, 0,
+    speed=dielen, once=true,
+    nopal={[14]=true,[15]=true}
+  }
+end
+
+function loadanims(animstr)
+  anims = {}
+  for row in all(splitstr(animstr, ' \n')) do
+    local key, cellstr = unpack(splitstr(row, '='))
+    local cells = {}
+    foreach(splitstr(cellstr, ','), function(c)
+      local k, v = unpack(splitstr(c, ':'))
+      if v then
+        cells[k] = tonum(v)
+      else
+        add(cells, k)
+      end
+    end)
+    cells.speed = cells.speed or #cells * .15
+    if (key == 'dying') cells = dieanim(cells[1])
+    anims[key] = cells
+  end
+  return anims
 end
 
 function loadpalette(s)
@@ -57,6 +76,7 @@ function sprite:new(opts)
     end
   end
   if (opts.palettespr) opts.palettes = loadpalette(opts.palettespr)
+  if (opts.animationstr) opts.animations = loadanims(opts.animationstr)
   return prototype(opts, self)
 end
 
