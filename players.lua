@@ -1,4 +1,5 @@
 dielen = 1.5
+sqrt2 = sqrt(2)
 function dieanim(s)
   return {
     s, s, 14, 15, 0, 0,
@@ -29,6 +30,7 @@ playerbase = {
   cooldown=0,
   poisoned=0,
   slipping=0,
+  jumping=false,
   deaths=0,
   kills=0,
 }
@@ -87,7 +89,7 @@ end
 function playerbase:control()
   if self.dying <= 0 then
     self:walk()
-    self:attack()
+    self:action()
   end
 end
 
@@ -98,7 +100,7 @@ function playerbase:walk(dir)
   if (self.slipping > 0) slip = .03
   if dir == 0 then
     -- speed down
-    self.vx = max(abs(self.vx) - self.accel*slip*dt*2, 0) * sgn(self.vx)
+    if (not self.jumping) self.vx = max(abs(self.vx) - self.accel*slip*dt*2, 0) * sgn(self.vx)
   else
     self.facing = dir
     -- speed up
@@ -106,7 +108,7 @@ function playerbase:walk(dir)
   end
 end
 
-function playerbase:attack()
+function playerbase:action()
   if btnp(b.x, self.p) and self.cooldown <= 0 then
     self.attacking = self.attklen
     self.cooldown = self.attklen + self.attkcool
@@ -586,8 +588,8 @@ function trut:animstate()
   end
 end
 
-function trut:attack()
-  playerbase.attack(self)
+function trut:action()
+  playerbase.action(self)
   if self.attacking > 0 and not btn(b.x, self.p) then
     self.attacking = 0
     self.cooldown = self.attkcool
@@ -688,7 +690,7 @@ function mant:update()
   end
 end
 
-function mant:attack()
+function mant:action()
   if not self.hiding and btnp(b.o, self.p) then
     self.hiding = true
     self.fade = 0.5
@@ -756,8 +758,8 @@ function sulg:update()
   end
 end
 
-function sulg:attack()
-  playerbase.attack(self)
+function sulg:action()
+  playerbase.action(self)
   if self.attacking > 0 and not btn(b.x, self.p) then
     self.attacking = 0
     self.cooldown = self.attkcool
@@ -813,10 +815,12 @@ spir = prototype({
     },
     palettespr=120,
   },
+  jumpspeed=1.5,
   vfacing=-1,
   gravity=0,
   wall=0,
   flipx=false,
+  jumping=false,
 }, playerbase)
 
 function spir:edgecheck()
@@ -828,7 +832,52 @@ function spir:edgecheck()
   return {x, y, 3, 3}
 end
 
+function spir:update()
+  if self.jumping then
+    self.gravity = 1
+  else
+    self.gravity = 0
+  end
+  playerbase.update(self)
+end
+
+function spir:action()
+  if not self.jumping and btnp(b.o, self.p) then
+    self.jumping = true
+    self.vfacing = 1
+    local jx, jy = false, false
+    if self.edge then
+      local ex, ey = unpack(self.edge)
+      self.vx += -self.jumpspeed * ex
+      self.vy += -self.jumpspeed * ey
+      jx, jy = true, true
+    else
+      if self.grounded then
+        self.vy -= self.jumpspeed
+        jy = true
+      elseif self.roofed then
+        self.vy += self.jumpspeed - g*dt
+        jy = true
+      end
+      if self.wall != 0 then
+        self.vx += self.jumpspeed * -self.facing
+        jx = true
+      end
+    end
+    if jx and jy then
+      self.vx /= sqrt2
+      self.vy /= sqrt2
+    end
+  end
+end
+
 function spir:walk()
+  self.jumping = not self:collides(self.x-1, self.y-1, self.w+2, self.h+2)
+  if self.jumping then
+    self.edge = nil
+    playerbase.walk(self)
+    return
+  end
 
   local diry = dpad('y', self.p)
   local dirx = dpad('x', self.p)
