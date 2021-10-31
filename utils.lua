@@ -1,6 +1,7 @@
 -- global constants
 dt = 1/60
 g = 5 * dt
+sqrt2 = sqrt(2)
 
 b = {l=0, r=1, u=2, d=3, o=4, x=5}
 
@@ -151,4 +152,8 @@ function splitstr(str, delim)
     end
   end
   return split
+end
+
+function pythag(a, b)
+  return sqrt(a*a+b*b)
 end

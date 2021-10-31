@@ -1,5 +1,4 @@
 dielen = 1.5
-sqrt2 = sqrt(2)
 
 poison = sprite:new{
   animations={idle={13}},
@@ -804,6 +803,7 @@ spir = prototype({
       wall_idle=39
       wall_walk=39,40
       wall_edge=41
+      spinning=58
       dying=22
     ]],
     palettespr=120,
@@ -814,6 +814,7 @@ spir = prototype({
   wall=0,
   flipx=false,
   jumping=false,
+  webs={},
 }, playerbase)
 
 function spir:edgecheck()
@@ -832,10 +833,48 @@ function spir:update()
     self.gravity = 0
   end
   playerbase.update(self)
+  if self.spinning and not self.jumping then
+    add(self.webs, {
+      self.spinning, self:webpoint(), strength=20
+    })
+    self.spinning = nil
+  end
+  webs = {}
+  for web in all(self.webs) do
+    web.strength -= dt
+    if (web.strength > 0) add(webs, web)
+  end
+  self.webs = webs
+end
+
+function spir:move()
+  if self.spinning then
+    local wx, wy = unpack(self.spinning)
+    local x, y = self.x+4, self.y
+    local dx, dy = x- wx, y-wy
+    local dist = pythag(dx, dy)
+  end
+  playerbase.move(self)
+end
+
+function spir:webpoint()
+  local x, y = self.x+4, self.y+4
+  if self.edge then
+    x += 4*self.edge[1]
+    y += 4*self.edge[2]
+  else
+    x += 4*self.facing
+    if (self.grounded) y += 3
+    if (self.roofed) y -= 4
+  end
+  return {x, y}
 end
 
 function spir:action()
-  if not self.jumping and btnp(b.o, self.p) then
+  bo, bx = btnp(b.o, self.p), btnp(b.x, self.p)
+  if self.spinning and bo then
+    self.spinning = nil
+  elseif not self.jumping and (bo or bx) then
     self.jumping = true
     self.vfacing = 1
     local jx, jy = false, false
@@ -861,19 +900,22 @@ function spir:action()
       self.vx /= sqrt2
       self.vy /= sqrt2
     end
+    if bx and #self.webs < 5 then
+      self.spinning = self:webpoint()
+    end
   end
 end
 
 function spir:walk()
+  local diry = dpad('y', self.p)
+  local dirx = dpad('x', self.p)
+
   self.jumping = not self:collides(self.x-1, self.y-1, self.w+2, self.h+2)
   if self.jumping then
     self.edge = nil
     playerbase.walk(self)
     return
   end
-
-  local diry = dpad('y', self.p)
-  local dirx = dpad('x', self.p)
 
   if self.edge then
     local cx, cy, cw = unpack(self.edge)
@@ -947,6 +989,7 @@ end
 function spir:animstate()
   local state = playerbase.animstate(self)
   if (state == "dying") return state
+  if (self.spinning) return "spinning"
   if (self.edge) state = "edge"
   if self.wall != 0 then
     state = "wall_" .. state
@@ -973,6 +1016,19 @@ function spir:drawsprite(x, y, opts)
     if self.wall == 0 then
       opts.offx *= -1
     end
+  end
+  if self.spinning then
+    opts.flipx = false
+    opts.flipy = false
+    local sx, sy = unpack(self.spinning)
+    line(sx,sy,self.x+4,self.y, 6)
+    -- print(sx..','..sy..':'..self.spinning.length, 1, 1, 10)
+  end
+  for web in all(self.webs) do
+    local p1, p2 = unpack(web)
+    local x1, y1 = unpack(p1)
+    local x2, y2 = unpack(p2)
+    line(x1, y1, x2, y2, 6)
   end
   playerbase.drawsprite(self, x, y, opts)
 end
