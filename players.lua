@@ -48,10 +48,6 @@ function playerbase:collides(x, y, w, h)
   return false
 end
 
-function playerbase:score()
-  return max(self.kills*2 - self.deaths, 0)
-end
-
 function playerbase:move()
   -- gravity pulls
   self.vy += g * self.gravity
@@ -290,7 +286,8 @@ function shru:states()
   return states
 end
 
-function playerbase:statecomplete(state)
+function shru:statecomplete(state)
+  playerbase.statecomplete(self, state)
   if state == 'dashing' then
     self.facing = -self.facing
   end
@@ -499,7 +496,7 @@ waps = prototype({
   name='waps',
   accel=10, speed=1,
   gravity=0,
-  locked=true,
+  -- locked=true,
 }, playerbase)
 
 function waps:die()

@@ -44,12 +44,6 @@ function initmenu()
   end)
 end
 
-menuitem(2, "clear high scores", function(mask)
-  if (mask & 0b00001) clearscores()
-  initscores()
-  return true
-end)
-
 -- chose player screen
 
 playerselect = {
@@ -296,16 +290,7 @@ end
 
 -- match end screen
 
-victory = {
-  unlocktimer=0,
-}
-
-function victory:unlock(aminal)
-  aminal.locked = false
-  savesettings()
-  self.unlocked = aminal
-  self.unlocktimer = 5
-end
+victory = {}
 
 function victory:start(players, time)
   self.idle = 0
@@ -323,12 +308,6 @@ function victory:start(players, time)
     savestats(player, time, place)
   end
 
-  self.needs_initials = is_highscore(self:makescore(self.players[1]))
-  self.highscore = self.needs_initials
-  self.initials = ""
-  self.initial = "a"
-  self.blink = 0
-
   gamestate = self
 end
 
@@ -342,55 +321,14 @@ end
 function victory:update()
   self.idle += dt
   if (self.idle > highscore_idle) return highscores:start()
-  if self.unlocktimer > 0 then
-    self.unlocktimer -= dt
-    if (self.unlocktimer <= 0) self.unlocked = nil
-  elseif self.needs_initials then
-    local winner = self.players[1]
-    self.blink += dt
-    if (self.blink >= 1) self.blink = 0
-    if btnp(b.x, winner.p) then
-      if self.initial == "`" then
-        if self.initials != "" then
-          place = save_score(self.initials, winner, self:makescore(winner))
-          if (place == 1) self:unlock(waps)
-        end
-        self.needs_initials = false
-      else
-        self.initials = self.initials .. self.initial
-        if (#self.initials >= 3) self.initial = "`"
-      end
-    elseif btnp(b.o, winner.p) and #self.initials > 1 then
-      self.initial = sub(self.initials, #self.initials, #self.initials)
-      self.initials = sub(self.initials, 1, #self.initials-1)
-    else
-      m = dpad('y', winner.p, true)
-      if m != 0 then
-        i = ord(self.initial)
-        i = wrap(96, i-m, 122)
-        self.initial = chr(i)
-        self.blink = 0
-      end
+  if btnp(b.x) then
+    local players = {}
+    for player in all(self.players) do
+      players[player.p+1] = {player=player}
     end
-  else
-    if btnp(b.x) then
-      local players = {}
-      for player in all(self.players) do
-        players[player.p+1] = {player=player}
-      end
-      game:start(players)
-    end
-    if (btnp(b.o)) playerselect:start()
+    game:start(players)
   end
-end
-
-function victory:outline(player, x, y)
-  for ox in all{-1,0,1} do
-    for oy in all{-1,0,1} do
-      if (ox == 0 or oy == 0) player:drawsprite(x+ox,y+oy, {palette={12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12}})
-    end
-  end
-  player:drawsprite(x,y)
+  if (btnp(b.o)) playerselect:start()
 end
 
 function victory:draw()
@@ -413,27 +351,7 @@ function victory:draw()
   end
 
   line(0, 116, 127, 116, 7)
-  if (self.highscore) print("player "..(self.players[1].p+1).." got a high score!", 12, 2, 10)
-  if self.needs_initials then
-    getinitials = "enter your initials: " .. self.initials
-    local i = self.initial
-    if (i == '`') i = " end"
-    if (self.blink < 0.5) getinitials = getinitials .. i
-    print(getinitials, 13, 120, 7)
-  else
-    print("❎ retry    🅾️ change aminals", 8, 120, 6)
-  end
-
-  if self.unlocked then
-    rectfill(16,16,111,111,8)
-    rectfill(18,18,109,109,0)
-    color(10)
-    print('congratulations!!', 30, 20)
-    print('you have unlocked '..self.unlocked.name, 20, 28)
-    circfill(64,64,8,12)
-    self.unlocked:drawsprite(60,60)
-    -- todo: unlocked by string?
-  end
+  print("❎ retry    🅾️ change aminals", 8, 120, 6)
 end
 
 -- highscores screen
@@ -450,65 +368,6 @@ aminals = {
 }
 animal_names = tmap(aminals, function(a) return a.name end)
 animal_ids = invert(animal_names)
--- todo: rename those arrays
-
-function name2bits(initials, aid)
-  local a,b,c = ord(initials, 1, 3)
-  local num = aid | a << 8 | b >> 8 | c >> 16
-  return num
-end
-
-byte = 255
-function bits2name(bits)
-  local aid = bits & byte
-  local initials = {
-    chr(bits >> 8 & byte),
-    chr(bits << 8 & byte),
-    chr(bits << 16 & byte),
-  }
-  name = ""
-  for i in all(initials) do
-    if (i != nil) name = name .. i
-  end
-  return name, aid
-end
-
-function is_highscore(score)
-  return score > dget(19)
-end
-
-function save_score(initials, player, score)
-  local namebits = name2bits(initials, animal_ids[player.name])
-
-  local saved = false
-  for i=0,18,2 do
-    local onamebits = dget(i)
-    local oscore = dget(i+1)
-    if score > oscore then
-      dset(i, namebits)
-      dset(i+1, score)
-      score = oscore
-      namebits = onamebits
-      saved = saved or i/2+1
-    end
-  end
-  return saved
-end
-
-function get_scores()
-  local scores = {}
-  for i=0,18,2 do
-    local namebits = dget(i)
-    local initials, aid = bits2name(namebits)
-    local score = dget(i+1)
-    add(scores, {
-      name=initials,
-      aminal=animal_names[aid],
-      score=score,
-    })
-  end
-  return scores
-end
 
 function dinc(i, v)
   dset(i, v + dget(i))
@@ -560,27 +419,9 @@ function getstats(aminal)
   return stats
 end
 
-cd = false
-function initscores()
-  if (not cd) cartdata("chasec_jouts")
-  cd = true
-  players = {forg, brid, shru, trut}
-  if dget(19) == 0 then
-    for i=1,10 do
-      save_score("aml", players[i%4+1], i * 1000)
-    end
-  end
-end
-
-function clearscores()
-  for i=0,60 do
-    dset(i, 0)
-  end
-end
 
 highscores = {
   clock = 0,
-  show_scores = true,
 }
 
 function highscores:start()
@@ -589,32 +430,6 @@ function highscores:start()
 end
 
 function highscores:draw()
-  if self.show_scores then
-    self:drawscores()
-  else
-    self:drawstats()
-  end
-end
-
-function highscores:drawscores()
-  cls()
-  color(11)
-  print("high scores", 42, 2)
-  line(0, 10, 127, 10)
-  for s, score in pairs(get_scores()) do
-    if s  % 2 == 0 then
-      color(3)
-    else
-      color(11)
-    end
-    if (s > self.clock * 5) break
-    n = "#"
-    if (s < 10) n = " " .. n
-    print(n..s.." "..score.name .. "  " .. score.aminal .. "  " .. score.score, 4, 4 + 10*s)
-  end
-end
-
-function highscores:drawstats()
   -- 128 pixels is 32 characters per line
   cls(1)
   color(7)
@@ -643,11 +458,9 @@ end
 
 function highscores:update()
   self.clock += dt
-  if self.clock > 30 then
-    self.clock = 0
-    self.show_scores = not self.show_scores
+  if self.clock > highscore_idle or btn(b.x) or btn(b.o) then
+    playerselect:start()
   end
-  if (btn(b.x) or btn(b.o)) playerselect:start()
 end
 
 -- game settings
@@ -680,7 +493,7 @@ end
 -- system callbacks
 
 function _init()
-  initscores()
+  cartdata("chasec_jouts")
   loadsettings()
   initmenu()
   gamestate = playerselect
